@@ -22,7 +22,7 @@ def get_micado_url(json_data, verb):
     return "https://{micado_user}:{micado_pass}@{micado_ip}:{micado_port}/" \
            "{submitter_api}{route}".format(**url_params)
 
-def get_params(json_data, verb):
+def get_params(json_data):
    return json_data.get('params', None)
 
 def post_to_submitter(micado_url, app_id, params):
