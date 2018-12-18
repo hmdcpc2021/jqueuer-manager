@@ -28,7 +28,7 @@ def get_params(json_data, verb):
 def post_to_submitter(micado_url, app_id, params):
     """ Submit TOSCA ADT to the TOSCAsubmitter """    
     files = {'file': open(TOSCA_OUT,'rb')}
-    data = {'id': app_id, 'params'=params}
+    data = {'id': app_id, 'params': params}
     r = requests.post(micado_url, files=files, data=data, verify=False)
 
 def delete_to_submitter(micado_url, app_id):

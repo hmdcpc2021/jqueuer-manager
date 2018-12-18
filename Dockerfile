@@ -10,6 +10,7 @@ COPY parameters.py /jqueuer_manager/parameters.py
 COPY monitoring.py /jqueuer_manager/monitoring.py
 COPY index.html /jqueuer_manager/index.html
 COPY tosca-cs.yaml /etc/jqueuer/tosca.yaml
+COPY handle_tosca.py /etc/jqueuer/handle_tosca.py
 WORKDIR /jqueuer_manager/
 RUN mkdir log
 RUN mkdir data
