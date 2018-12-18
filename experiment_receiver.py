@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import ssl
 import urllib.parse, urllib.request, json, time, ast, random, requests
 from pprint import pprint
 from threading import Thread
@@ -19,6 +20,7 @@ def add_experiment(experiment_json):
 						   .replace(".","_").replace("-","_") + "__" + private_id
 	jq_server_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
 	submit_route = tosca.get_micado_url(experiment_json, 'POST')
+	params = tosca.get_params(experiment_json)
 	tosca_path = experiment_json.get('abs_tosca_path', TOSCA_PATH)
 
 	manual_entries = {"JQUEUER_IP": jq_server_ip, "EXPID": experiment_id,
@@ -26,7 +28,7 @@ def add_experiment(experiment_json):
 	experiment_json.update(manual_entries)
 
 	tosca.generate_tosca(experiment_json, tosca_path)
-	tosca.post_to_submitter(submit_route, app_id)
+	tosca.post_to_submitter(submit_route, app_id, params)
 
 	experiment = Experiment(experiment_id, private_id, experiment_json)
 	experiment_thread = Thread(target = experiment.start, args = ())
@@ -108,12 +110,13 @@ class HTTP(BaseHTTPRequestHandler):
 		self.wfile.write(bytes(str(data_back), "utf-8"))
 
 
-def start(experiments_arg, port=8081):
+def start(experiments_arg, port=443, certfile='./server.pem'):
 	# Starting the REST API Server
 	global experiments
 	experiments = experiments_arg
 	server_address = ('', port)
 	httpd = HTTPServer(server_address, HTTP)
+	httpd.socket = ssl.wrap_socket (httpd.socket, certfile=certfile, server_side=True)
 	print('Starting Experiment Manager HTTP Server...' + str(port))
 
 	try:

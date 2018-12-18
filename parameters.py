@@ -2,7 +2,7 @@ import os
 
 # Experiment receiver configuration
 http_server_port	= 8081
-
+certs                   = '/etc/jqueuer/certs/server.pm'
 # MiCADO Master configuration
 micado_master_ip = os.getenv('MICADO_SERVER', "micado")
 

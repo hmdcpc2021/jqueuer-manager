@@ -22,15 +22,19 @@ def get_micado_url(json_data, verb):
     return "https://{micado_user}:{micado_pass}@{micado_ip}:{micado_port}/" \
            "{submitter_api}{route}".format(**url_params)
 
-def post_to_submitter(micado_url, app_id):
+def get_params(json_data, verb):
+   return json_data.get('params', None)
+
+def post_to_submitter(micado_url, app_id, params):
     """ Submit TOSCA ADT to the TOSCAsubmitter """    
     files = {'file': open(TOSCA_OUT,'rb')}
-    data = {'id': app_id}
+    data = {'id': app_id, 'params'=params}
     r = requests.post(micado_url, files=files, data=data, verify=False)
 
 def delete_to_submitter(micado_url, app_id):
     """ Submit TOSCA ADT to the TOSCAsubmitter """
-    r = requests.delete(micado_url + app_id, verify=False)
+    files = {'file': open(TOSCA_OUT, 'rb')}
+    r = requests.delete(micado_url + app_id, files=files, verify=False)
 
 def generate_tosca(json_data, tosca_path):
     """ Generate the TOSCA ADT """
