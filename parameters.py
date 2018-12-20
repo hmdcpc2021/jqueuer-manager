@@ -1,8 +1,7 @@
 import os
 
 # Experiment receiver configuration
-http_server_port	= 443
-certfile                = '/etc/jqueuer/certs/server.pem'
+http_server_port	= 8081
 # MiCADO Master configuration
 micado_master_ip = os.getenv('MICADO_SERVER', "micado")
 

@@ -4,7 +4,7 @@ import job_manager
 import experiment_receiver
 
 from experiment import Experiment 
-from parameters import http_server_port, certfile
+from parameters import http_server_port
 
 experiments = {}
 
@@ -14,5 +14,5 @@ if __name__ == '__main__':
 	job_manager_thread.start()
 
 	# Starting the experiment receiver
-	experiment_receiver_thread = Thread(target = experiment_receiver.start, args = (experiments,http_server_port,certfile))
+	experiment_receiver_thread = Thread(target = experiment_receiver.start, args = (experiments,http_server_port))
 	experiment_receiver_thread.start()

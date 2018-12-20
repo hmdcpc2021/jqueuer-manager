@@ -1,0 +1,82 @@
+version: '3'
+services:
+    redis:
+        image: "redis:alpine"
+        container_name: redis
+        command: redis-server --requirepass b4sic
+        ports:
+            - 6379:6379
+        networks:
+            jqueuer_network:
+
+    statsd:
+        image: prom/statsd-exporter
+        container_name: statsd
+        ports:
+            - 9125:9125
+            - 9125:9125/udp
+            - 9102:9102
+            - 9102:9102/udp
+        networks:
+            jqueuer_network:
+
+    rabbit:
+        hostname: rabbit
+        image: rabbitmq:latest
+        container_name: rabbit
+        environment:
+            - RABBITMQ_DEFAULT_USER=admin
+            - RABBITMQ_DEFAULT_PASS=mypass
+        ports:
+            - "5672:5672"
+        networks:
+            jqueuer_network:
+
+    flower:
+        hostname: flower
+        image: totem/celery-flower-docker
+        container_name: flower
+        ports:
+            - "5555:5555"
+        networks:
+            jqueuer_network:
+        environment:
+            - AMQP_USERNAME=admin
+            - AMQP_PASSWORD=mypass
+            - AMQP_HOST=rabbit
+            - AMQP_PORT=5672
+            - AMQP_ADMIN_USERNAME=admin
+            - AMQP_ADMIN_PASSWORD=mypass
+            - AMQP_ADMIN_HOST=rabbit
+            - AMQP_ADMIN_PORT=5672
+            - USERNAME=admin
+            - PASSWORD=mypass
+
+    jqueuer_manager:
+        image: micado/add_on_jqueuer_manager:0.3.5
+        container_name: manager
+        ports:
+            - "8081:8081"
+        networks:
+            jqueuer_network:
+        volumes:
+            - /usr/bin/docker:/usr/bin/docker
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ~/jqueuer_test/component-jqueuer-manager:/etc/jqueuer/
+    nginx:
+        build: /home/cloudsigma/ngnix/webapp_nginx_ssl/nginx
+        container_name: nginx
+        networks:
+            jqueuer_network:
+        ports:
+          - 8080:8080
+          - 443:443
+        links:
+          - jqueuer_manager
+        volumes:
+          - /etc/jqueuer/nginx/nginx.conf:/etc/nginx/nginx.conf
+          - /etc/jqueuer/nginx/cert/cert.pem:/etc/nginx/conf.d/cert.pem
+          - /etc/jqueuer/nginx/cert/key.pem:/etc/nginx/conf.d/key.pem
+
+networks:
+    jqueuer_network:

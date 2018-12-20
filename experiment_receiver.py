@@ -110,13 +110,12 @@ class HTTP(BaseHTTPRequestHandler):
 		self.wfile.write(bytes(str(data_back), "utf-8"))
 
 
-def start(experiments_arg, port=443, certfile='./server.pem'):
+def start(experiments_arg, port=8081):
 	# Starting the REST API Server
 	global experiments
 	experiments = experiments_arg
 	server_address = ('', port)
 	httpd = HTTPServer(server_address, HTTP)
-	httpd.socket = ssl.wrap_socket (httpd.socket, certfile=certfile, server_side=True)
 	print('Starting Experiment Manager HTTP Server...' + str(port))
 
 	try:

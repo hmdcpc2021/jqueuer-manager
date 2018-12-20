@@ -25,7 +25,7 @@ topology_template:
       artifacts:
        image:
          type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: jaydes/jqueuer_agent:sleep
+         file: micado/add_on_jqueuer_agent:sleep
          repository: docker_hub
 
     {{ SERVICE_NAME }}:
