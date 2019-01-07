@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>jQueuer for MiCADOv0.6.x</h2>
+<p id="Server"></p>
+
+<h3>Experiment JSON:</h3>
+<input type="file" id="data" />
+<br>
+<button onclick="myFunction()" id="send">Add Experiment</button>
+<button onclick="delEx()" id="kill">Kill Experiment</button>
+<p>-------------------------------- Response ----------------------</p>
+<pre id="response" style="width: 50%; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
+<p>------------------------------------------------------------------</p>
+<a href="" onclick="grafana()">Grafana</a><br>
+<a href="" onclick="prometheus()">Prometheus</a><br>
+<a href="" onclick="results()">HTTP Server - Result</a><br>
+<pre id="file-content" style="width: 75vw; height: 50vh; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
+<script>
+	var server = window.location.host.split(":")[0];
+	document.getElementById("Server").innerHTML = "Server: " + server
+function grafana() {
+	var win = window.open("http://" + server + ":3000", '_blank');
+  	win.focus();
+}
+function prometheus() {
+	var win = window.open("http://" + server + ":9091", '_blank');
+  	win.focus();
+}
+function results() {
+	var win = window.open("http://jobserver.hopto.org/", '_blank');
+  	win.focus();
+}
+function delEx() {
+    var element = document.getElementById('file-content');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/del";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	xhr.send(element.textContent);
+	var kill_button = document.getElementById('kill');
+	kill_button.disabled = true
+}
+
+function myFunction() {
+    var element = document.getElementById('file-content');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/add";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	//var data = JSON.stringify(element.textContent);
+	xhr.send(element.textContent);
+	var send_button = document.getElementById('send');
+	send_button.disabled = true
+}
+
+function readSingleFile(e) {
+  var file = e.target.files[0];
+  if (!file) {
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var contents = e.target.result;
+    displayContents(contents);
+  };
+  reader.readAsText(file);
+}
+
+function displayContents(contents) {
+  var element = document.getElementById('file-content');
+  element.textContent = contents;
+}
+
+document.getElementById('data')
+  .addEventListener('change', readSingleFile, false);
+</script>
+
+</body>
+</html>

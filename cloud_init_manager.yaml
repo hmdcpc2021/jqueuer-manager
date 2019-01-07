@@ -1,0 +1,35 @@
+#cloud-config
+apt_upgrade: false
+apt_update: false
+manage_etc_hosts: false
+package_update: false
+package_upgrade: false
+
+runcmd:
+  - sed -i 's/APT::Periodic::Unattended-Upgrade "1";/APT::Periodic::Unattended-Upgrade "0";/g' /etc/apt/apt.conf.d/20auto-upgrades
+  - echo "127.0.0.1 jqueuer_manager" | sudo tee -a /etc/hosts
+  - echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolvconf/resolv.conf.d/head
+  - resolvconf -u
+# Docker install
+  - apt-get update
+  - apt-get install -y --no-install-recommends apt-transport-https ca-certificates curl software-properties-common wget unzip jq dnsmasq
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+  - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - apt-get update
+  - apt-get install -y docker-ce=17.09.1~ce-0~ubuntu
+# Install Docker Compose
+  - curl -L https://github.com/docker/compose/releases/download/1.16.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+  - chmod +x /usr/local/bin/docker-compose
+# Create certs for Ngninx
+  - apt-get install -y openssl
+  - curl -L  https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/nginx/Dockerfile_nginx --create-dirs -o /etc/nginx/Dockerfile
+  - curl -L  https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/nginx/nginx.conf --create-dirs -o /etc/nginx/nginx.conf
+  - mkdir  /etc/nginx/cert
+  - openssl req -subj '/CN=localhost' -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365
+  - mv key.pem cert.pem /etc/nginx/cert
+#Init & Start JQUEUER
+  - curl -L https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/jqueuer_docker_compose.yml --create-dirs -o /etc/jqueuer/jqueuer_docker_compose.yml
+  - mkdir -p /etc/jqueuer/tosca
+  - curl -L https://raw.githubusercontent.com/component-jqueuer-manager/component-jqueuer-manager/0.3.x/tosca-cs.yaml -o /etc/jqueuer/tosca-cs.yaml
+  - chmod -R 777 /etc/jqueuer/
+  - docker-compose --file /etc/jqueuer/jqueuer_docker_compose.yml up -d
