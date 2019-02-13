@@ -6,7 +6,7 @@ TOSCA_OUT = 'tosca.yaml'
 def get_micado_url(json_data, verb):
     """ Build the MiCADO url from JSON """
     if verb == 'POST':
-        route = '/app/launch/file'
+        route = '/app/launch/'
     elif verb == 'DELETE':
         route = '/app/undeploy/'
 
