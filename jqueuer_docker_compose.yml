@@ -53,7 +53,7 @@ services:
             - PASSWORD=mypass
 
     jqueuer_manager:
-        image: micado/jqueuer_manager:0.3.5
+        image: micado/add_on_jqueuer_manager:0.3.5
         container_name: manager
         ports:
             - "8081:8081"

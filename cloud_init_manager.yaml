@@ -22,7 +22,7 @@ runcmd:
   - chmod +x /usr/local/bin/docker-compose
 # Create certs for Ngninx
   - apt-get install -y openssl
-  - curl -L  https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/nginx/Dockerfile_nginx --create-dirs -o /etc/nginx/Dockerfile
+  - curl -L  https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/nginx/Dockerfile --create-dirs -o /etc/nginx/Dockerfile
   - curl -L  https://raw.githubusercontent.com/micado-scale/component-jqueuer-manager/0.3.x/nginx/nginx.conf --create-dirs -o /etc/nginx/nginx.conf
   - mkdir  /etc/nginx/cert
   - openssl req -subj '/CN=localhost' -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365
