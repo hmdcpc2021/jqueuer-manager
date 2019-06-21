@@ -5,12 +5,7 @@ from datadog import initialize
 from datadog import statsd
 
 # Experiment receiver configuration
-http_server_port = 8081
-
-# Prometheus configuration
-prometheus_protocol = "http"
-prometheus_ip = "prometheus"
-prometheus_port = 9090
+http_server_port = os.getenv("LISTEN_PORT", 8081)
 
 # Job Queue Prefix
 JOB_QUEUE_PREFIX = "jqueue_service_"
@@ -19,8 +14,8 @@ JOB_QUEUE_PREFIX = "jqueue_service_"
 broker_protocol = "pyamqp"
 broker_username = os.getenv("RABBIT_USER", "admin")
 broker_password = os.getenv("RABBIT_PASS", "mypass")
-broker_server = "rabbit"
-broker_port = 5672
+broker_server = os.getenv("RABBIT_SERVER", "jqueuer-rabbit")
+broker_port = os.getenv("RABBIT_PORT", 5672)
 
 
 def broker():
@@ -33,13 +28,13 @@ def broker():
 
 # Redis Backend configuration
 backend_protocol = "redis"
-backend_server = "redis"
-backend_password = os.getenv("REDIS_PASS", "jqueuer")
-backend_port = 6379
+backend_server = os.getenv("REDIS_SERVER", "jqueuer-redis")
+backend_password = os.getenv("REDIS_PASS", "mypass")
+backend_port = os.getenv("REDIS_PORT", 6379)
 backend_db = 0
 backend_experiment_db_id = 10
 
-backend_experiment_db = redis.StrictRedis(
+backend_experiment_db = redis.Redis(
     host=backend_server,
     port=backend_port,
     password=backend_password,
@@ -47,7 +42,6 @@ backend_experiment_db = redis.StrictRedis(
     charset="utf-8",
     decode_responses=True,
 )
-
 
 def backend(db):
     backend = (
@@ -65,8 +59,8 @@ def backend(db):
 
 
 # Prometheus exporer configuration
-STATSD_SERVER = "statsd"
-STATSD_PORT = 9125
+STATSD_SERVER = os.getenv("STATSD_SERVER", "jqueuer-statsd")
+STATSD_PORT = os.getenv("STATSD_PORT", 9125)
 STATSD_OPTIONS = {
     "api_key": "jqueuer_api_key",
     "app_key": "jqueuer_app_key",
