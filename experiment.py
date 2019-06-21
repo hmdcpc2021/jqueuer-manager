@@ -10,16 +10,17 @@ class Experiment:
 	def __init__(self, experiment_id, private_id, experiment):
 		# Reset stating time
 		self.experiment_adding_timestamp	= 	self.time_now()
-
+		self.jqueuer_task_added_count = 0
+		self.jqueuer_job_added_count = 0
 		# Assigning experiment ID
 		self.experiment_id 	= experiment_id
 
-		# Assigning the image URL from the experiment to a variable
-		self.image_url = experiment['image_url']
+		# Assigning the desired software from the experiment to a variable
+		self.container_name = experiment['container_name']
 
-		# Replacing non-alphabetical characters in the image URL with an underscore 
+		# Replacing non-alphabetical characters in the desired software name with an underscore 
 		try:
-			self.service_name 	= self.image_url.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
+			self.service_name 	= self.container_name.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
 			self.add_service(self.service_name)
 		except Exception as e:
 			self.service_name 	= None
@@ -99,4 +100,3 @@ class Experiment:
 	# Process the jobs and then start the autoscaling process
 	def start(self):
 		self.process_jobs()
-		self.update_params()
