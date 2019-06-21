@@ -8,6 +8,8 @@ import job_operations
 from parameters import backend_experiment_db, JOB_QUEUE_PREFIX
 from celery import subtask
 
+logger = logging.getLogger(__name__)
+
 class Experiment:
 
     """ Experiment Class
@@ -127,4 +129,7 @@ class Experiment:
     def start(self):
         """ Start the experiment """
         self.process_jobs()
+        logger.info("-JQueuer- Added experiment ID {}".format(self.experiment_id))
+        logger.info("-JQueuer- Will try to run on container: {}".format(self.container_name))
+        
 

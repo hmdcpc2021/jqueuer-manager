@@ -6,6 +6,18 @@ import experiment_receiver
 from experiment import Experiment 
 from parameters import http_server_port
 
+import logging
+
+""" Configure logging """
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+conlog = logging.StreamHandler()
+conlog.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+conlog.setFormatter(formatter)
+logger.addHandler(conlog)
+logger.debug("Logging configured.")
+
 experiments = {}
 
 if __name__ == '__main__':
