@@ -34,7 +34,7 @@ class Experiment:
 	def add_service(self, service_name):
 		if (backend_experiment_db.exists(service_name)):
 			return ""
-		backend_experiment_db.set(service_name, 
+		backend_experiment_db.hmset(service_name, 
 			{'experiment_id':self.experiment_id})
 
 	# decide whether the jobs are stored in a list or an array
