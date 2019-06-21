@@ -1,17 +1,12 @@
-FROM python:3
+FROM python:3.6-slim
 
-ADD requirements.txt /jqueuer_manager/requirements.txt
-ADD experiment.py /jqueuer_manager/experiment.py
-ADD job_manager.py /jqueuer_manager/job_manager.py
-ADD job_operations.py /jqueuer_manager/job_operations.py
-ADD experiment_receiver.py /jqueuer_manager/experiment_receiver.py
-ADD jqueuer_manager.py /jqueuer_manager/jqueuer_manager.py
-ADD parameters.py /jqueuer_manager/parameters.py
-ADD monitoring.py /jqueuer_manager/monitoring.py
-ADD index.html /jqueuer_manager/index.html
-WORKDIR /jqueuer_manager/
-RUN mkdir log
-RUN mkdir data
-RUN pip install -r requirements.txt
-RUN pip install -U "celery[redis]"
+WORKDIR /var/lib/jqueuer-manager/
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+
+COPY . .
+RUN mkdir log \
+&& mkdir data \
+&& rm requirements.txt
+
 ENTRYPOINT python3 jqueuer_manager.py 
