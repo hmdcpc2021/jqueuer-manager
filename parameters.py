@@ -1,3 +1,5 @@
+import os
+
 # Experiment receiver configuration
 http_server_port	= 8081
 
@@ -11,8 +13,8 @@ JOB_QUEUE_PREFIX 	= 	'jqueue_service_'
 
 # Backend configuration - Rabbitmq
 broker_protocol		= 	'pyamqp'
-broker_username 	= 	'admin'
-broker_password 	= 	'mypass'
+broker_username 	= 	os.getenv('RABBIT_USER', 'admin')
+broker_password 	= 	os.getenv('RABBIT_PASS', 'mypass')
 broker_server		=	'rabbit'
 broker_port 		= 	5672
 
@@ -28,20 +30,22 @@ def broker():
 import redis
 backend_protocol 			= 	'redis'
 backend_server	 			=	'redis'
+backend_password			=	os.getenv('REDIS_PASS', 'jqueuer')
 backend_port     			=	6379
 backend_db		 			=	0
 backend_experiment_db_id	=	10
 
 backend_experiment_db = redis.StrictRedis(
 	host=backend_server, 
-	port=backend_port, 
+	port=backend_port,
+	password=backend_password, 
 	db=backend_experiment_db_id, 
 	charset="utf-8", 
 	decode_responses=True
 	)
  	
 def backend(db):
-	backend = backend_protocol + '://' + backend_server + ':' + str(backend_port) + '/' + str(db)
+	backend = backend_protocol + '://:' + backend_password + '@' + backend_server + ':' + str(backend_port) + '/' + str(db)
 	return backend
 
 
