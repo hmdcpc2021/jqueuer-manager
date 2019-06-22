@@ -2,6 +2,7 @@ import time
 import math
 import datetime
 import random
+import logging
 
 import monitoring
 import job_operations
@@ -16,7 +17,7 @@ class Experiment:
 	Holds an experiment
 	"""
 
-    def __init__(self, experiment_id, private_id, experiment):
+    def __init__(self, experiment_id, experiment):
         """ init method """
         # Reset stating time
         self.experiment_adding_timestamp = self.time_now()
@@ -26,21 +27,12 @@ class Experiment:
         self.experiment_id = experiment_id
 
         # Assigning the desired software from the experiment to a variable
-        self.container_name = experiment["container_name"]
-
-        # Replacing non-alphabetical characters in the desired software name with an underscore
         try:
-            self.service_name = (
-                self.container_name.replace("/", "_")
-                .replace(":", "_")
-                .replace(".", "_")
-                .replace("-", "_")
-                + "__"
-                + private_id
-            )
-            self.add_service(self.service_name)
-        except Exception as e:
-            self.service_name = None
+            self.service_name = experiment["container_name"]
+        except KeyError:
+            logger.error("-JQueuer- No container_name specified in JSON!")
+            raise KeyError
+        self.add_service(self.service_name)
         self.experiment = experiment
         monitoring.experiment_adding_timestamp(
             self.experiment_id, self.service_name, self.experiment_adding_timestamp
@@ -130,6 +122,6 @@ class Experiment:
         """ Start the experiment """
         self.process_jobs()
         logger.info("-JQueuer- Added experiment ID {}".format(self.experiment_id))
-        logger.info("-JQueuer- Will try to run on container: {}".format(self.container_name))
+        logger.info("-JQueuer- Will try to run on container: {}".format(self.service_name))
         
 

@@ -19,7 +19,7 @@ def add_experiment(experiment_json):
     )
     experiment_id = "exp_" + private_id
 
-    experiment = Experiment(experiment_id, private_id, experiment_json)
+    experiment = Experiment(experiment_id, experiment_json)
     experiment_thread = Thread(target=experiment.start, args=())
     experiment_thread.start()
 
