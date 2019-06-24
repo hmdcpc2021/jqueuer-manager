@@ -1,35 +1,24 @@
 <!DOCTYPE html>
 <html>
 <body>
-<h2>MiCADO V4</h2>
+<h2>jQueuer v0.5.0</h2>
 <p id="Server"></p>
 
 <h3>Experiment JSON:</h3>
 <input type="file" id="data" />
 <br>
 <button onclick="myFunction()" id="send">Add Experiment</button>
+<h3>Experiment Container:</h3>
+<input type="text" id="expid" />
+<br>
+<button onclick="myDelete()" id="delete">Delete Experiment</button>
 <p>-------------------------------- Response ----------------------</p>
 <pre id="response" style="width: 50%; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
 <p>------------------------------------------------------------------</p>
-<a href="" onclick="grafana()">Grafana</a><br>
-<a href="" onclick="prometheus()">Prometheus</a><br>
-<a href="" onclick="results()">HTTP Server - Result</a><br>
 <pre id="file-content" style="width: 75vw; height: 50vh; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
 <script>
 	var server = window.location.host.split(":")[0];
 	document.getElementById("Server").innerHTML = "Server: " + server
-function grafana() {
-	var win = window.open("http://" + server + ":3000", '_blank');
-  	win.focus();
-}
-function prometheus() {
-	var win = window.open("http://" + server + ":9091", '_blank');
-  	win.focus();
-}
-function results() {
-	var win = window.open("http://jobserver.hopto.org/", '_blank');
-  	win.focus();
-}
 function myFunction() {
     var element = document.getElementById('file-content');
 
@@ -45,8 +34,25 @@ function myFunction() {
 	};
 	//var data = JSON.stringify(element.textContent);
 	xhr.send(element.textContent);
-	var send_button = document.getElementById('send');
-	send_button.disabled = true 
+}
+
+function myDelete() {
+    var element = document.getElementById('expid');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/del";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	var obj = {};
+	obj[ 'container' ] = element.value;
+	var data = JSON.stringify(obj);
+	xhr.send(data);
 }
 
 function readSingleFile(e) {

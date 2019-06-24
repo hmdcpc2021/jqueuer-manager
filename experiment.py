@@ -44,7 +44,7 @@ class Experiment:
     def add_service(self, service_name):
         """ Add the service name to the backend (redis) database """
         if backend_experiment_db.exists(service_name):
-            return ""
+            logger.error("-JQueuer- This service already has an experiment, delete it first")
         backend_experiment_db.hmset(service_name, {"experiment_id": self.experiment_id})
 
     def process_jobs(self):

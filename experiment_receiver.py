@@ -18,6 +18,8 @@ def add_experiment(experiment_json):
         str(int(round(time.time() * 1000))) + "_" + str(random.randrange(100, 999))
     )
     experiment_id = "exp_" + private_id
+    if backend_experiment_db.exists(experiment_json['container_name']):
+        return "This container already has an experiment assigned to it - please delete first"
 
     experiment = Experiment(experiment_id, experiment_json)
     experiment_thread = Thread(target=experiment.start, args=())
@@ -27,9 +29,9 @@ def add_experiment(experiment_json):
     return str(experiment_id) + " has been added & started successfully ! \n"
 
 
-def del_experiment(experiment_json):
+def del_experiment(delete_form):
     """ Delete an experiment """
-    service_name = experiment_json["service_name"]
+    service_name = delete_form.get('container')
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
         return "Service {} removed from queue".format(service_name)
