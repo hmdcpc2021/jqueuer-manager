@@ -70,3 +70,27 @@ def experiment_adding_timestamp(
         tags=["experiment_id:%s" % experiment_id, "service_name:%s" % service_name],
     )
 
+# Time when the experiment must finish
+JQUEUER_EXPERIMENT_DEADLINE = "jqueuer_experiment_deadline"
+
+def experiment_deadline(
+    experiment_id, service_name, experiment_deadline
+):
+    statsd.gauge(
+        JQUEUER_EXPERIMENT_DEADLINE,
+        experiment_deadline,
+        tags=["experiment_id:%s" % experiment_id, "service_name:%s" % service_name],
+    )
+
+# Estimated time of average job
+JQUEUER_EXPERIMENT_TASK_DURATION = "jqueuer_single_task_duration"
+
+def experiment_task_duration(
+    experiment_id, service_name, single_task_duration
+):
+    statsd.gauge(
+        JQUEUER_EXPERIMENT_TASK_DURATION,
+        single_task_duration,
+        tags=["experiment_id:%s" % experiment_id, "service_name:%s" % service_name],
+    )
+

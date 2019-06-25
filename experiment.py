@@ -20,7 +20,6 @@ class Experiment:
     def __init__(self, experiment_id, experiment):
         """ init method """
         # Reset stating time
-        self.experiment_adding_timestamp = self.time_now()
         self.jqueuer_task_added_count = 0
         self.jqueuer_job_added_count = 0
         # Assigning experiment ID
@@ -33,10 +32,24 @@ class Experiment:
             logger.error("-JQueuer- No container_name specified in JSON!")
             raise KeyError
         self.add_service(self.service_name)
+
         self.experiment = experiment
+
+        experiment_adding_timestamp = self.time_now()
         monitoring.experiment_adding_timestamp(
-            self.experiment_id, self.service_name, self.experiment_adding_timestamp
+            self.experiment_id, self.service_name, experiment_adding_timestamp
         )
+
+        deadline = experiment_adding_timestamp + self.experiment.get('experiment_deadline', 0)
+        monitoring.experiment_deadline(
+            self.experiment_id, self.service_name, deadline
+        )
+
+        duration = self.experiment.get('single_task_duration', 300)
+        monitoring.experiment_task_duration(
+            self.experiment_id, self.service_name, duration
+        )
+        
 
     def time_now(self):
         return datetime.datetime.now().timestamp()
