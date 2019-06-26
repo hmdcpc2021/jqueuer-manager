@@ -9,8 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from pprint import pprint
 
-
-from parameters import backend_experiment_db
+from parameters import backend_experiment_db, JOB_QUEUE_PREFIX
 from experiment import Experiment
 
 
@@ -20,7 +19,7 @@ def add_experiment(experiment_json):
         str(int(round(time.time() * 1000))) + "_" + str(random.randrange(100, 999))
     )
     experiment_id = "exp_" + private_id
-    if backend_experiment_db.exists(experiment_json['container_name']):
+    if backend_experiment_db.exists(experiment_json["container_name"]):
         return "This container already has an experiment assigned to it - please delete first"
 
     experiment = Experiment(experiment_id, experiment_json)
@@ -33,9 +32,18 @@ def add_experiment(experiment_json):
 
 def del_experiment(delete_form):
     """ Delete an experiment """
-    service_name = delete_form.get('container')
+    service_name = delete_form.get("container")
     try:
-        subprocess.run(['celery', '-A', 'job_manager', 'purge', '-f'])
+        subprocess.run(
+            [
+                "celery",
+                "-A",
+                "job_manager",
+                "amqp",
+                "queue.purge",
+                JOB_QUEUE_PREFIX + service_name,
+            ]
+        )
     except Exception as e:
         print(e)
     if backend_experiment_db.exists(service_name):
