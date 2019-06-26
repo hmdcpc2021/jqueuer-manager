@@ -2,9 +2,10 @@ from threading import Thread
 
 import job_manager
 import experiment_receiver
+import monitoring
 
 from experiment import Experiment 
-from parameters import http_server_port
+from parameters import http_server_port, metrics_server_port
 
 import logging
 
@@ -26,5 +27,8 @@ if __name__ == '__main__':
 	job_manager_thread.start()
 
 	# Starting the experiment receiver
-	experiment_receiver_thread = Thread(target = experiment_receiver.start, args = (experiments,http_server_port,))
+	experiment_receiver_thread = Thread(target = experiment_receiver.start, args = (experiments, http_server_port))
 	experiment_receiver_thread.start()
+
+	metrics_server_thread = Thread(target = monitoring.start, args = (metrics_server_port,))
+	metrics_server_thread.start()

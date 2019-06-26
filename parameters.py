@@ -1,11 +1,10 @@
 import os
 
 import redis
-from datadog import initialize
-from datadog import statsd
 
 # Experiment receiver configuration
 http_server_port = os.getenv("LISTEN_PORT", 8081)
+metrics_server_port = os.getenv("METRIC_PORT", 9081)
 
 # Job Queue Prefix
 JOB_QUEUE_PREFIX = "jqueue_service_"
@@ -56,15 +55,3 @@ def backend(db):
         + str(db)
     )
     return backend
-
-
-# Prometheus exporer configuration
-STATSD_SERVER = os.getenv("STATSD_SERVER", "jqueuer-statsd")
-STATSD_PORT = os.getenv("STATSD_PORT", 9125)
-STATSD_OPTIONS = {
-    "api_key": "jqueuer_api_key",
-    "app_key": "jqueuer_app_key",
-    "statsd_host": STATSD_SERVER,
-    "statsd_port": STATSD_PORT,
-}
-initialize(**STATSD_OPTIONS)

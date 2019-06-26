@@ -4,9 +4,11 @@ import ast
 import random
 import urllib.parse
 
+import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from pprint import pprint
+
 
 from parameters import backend_experiment_db
 from experiment import Experiment
@@ -32,9 +34,13 @@ def add_experiment(experiment_json):
 def del_experiment(delete_form):
     """ Delete an experiment """
     service_name = delete_form.get('container')
+    try:
+        subprocess.run(['celery', '-A', 'job_manager', 'purge', '-f'])
+    except Exception as e:
+        print(e)
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
-        return "Service {} removed from queue".format(service_name)
+        return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
 
