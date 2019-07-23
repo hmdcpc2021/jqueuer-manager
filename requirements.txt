@@ -1,0 +1,5 @@
+celery[redis]
+prometheus_client
+datadog
+docker
+requests

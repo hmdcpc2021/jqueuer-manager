@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>jQueuer v0.5.0</h2>
+<p id="Server"></p>
+
+<h3>Experiment JSON:</h3>
+<input type="file" id="data" />
+<br>
+<button onclick="myFunction()" id="send">Add Experiment</button>
+<h3>Experiment Container:</h3>
+<input type="text" id="expid" />
+<br>
+<button onclick="myDelete()" id="delete">Delete Experiment</button>
+<p>-------------------------------- Response ----------------------</p>
+<pre id="response" style="width: 50%; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
+<p>------------------------------------------------------------------</p>
+<pre id="file-content" style="width: 75vw; height: 50vh; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
+<script>
+	var server = window.location.host.split(":")[0];
+	document.getElementById("Server").innerHTML = "Server: " + server
+function myFunction() {
+    var element = document.getElementById('file-content');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/add";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	//var data = JSON.stringify(element.textContent);
+	xhr.send(element.textContent);
+}
+
+function myDelete() {
+    var element = document.getElementById('expid');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/del";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	var obj = {};
+	obj[ 'container' ] = element.value;
+	var data = JSON.stringify(obj);
+	xhr.send(data);
+}
+
+function readSingleFile(e) {
+  var file = e.target.files[0];
+  if (!file) {
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var contents = e.target.result;
+    displayContents(contents);
+  };
+  reader.readAsText(file);
+}
+
+function displayContents(contents) {
+  var element = document.getElementById('file-content');
+  element.textContent = contents;
+}
+
+document.getElementById('data')
+  .addEventListener('change', readSingleFile, false);
+</script>
+
+</body>
+</html>
