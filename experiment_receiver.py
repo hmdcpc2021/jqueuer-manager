@@ -3,13 +3,14 @@ import time
 import ast
 import random
 import urllib.parse
+import docker
 
 import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from pprint import pprint
 
-from parameters import backend_experiment_db, JOB_QUEUE_PREFIX
+from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_service_name
 from experiment import Experiment
 
 
@@ -48,6 +49,20 @@ def del_experiment(delete_form):
         print(e)
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
+        # Restart Pushgateway container
+        client = None
+        try:
+            client = docker.from_env()
+            for container in client.containers.list():
+                container_service_name = (
+                    container.labels.get("io.kubernetes.container.name")
+                    or container.name
+                )
+                if pushgateway_service_name.lower() in container_service_name.lower():
+                    container.restart()
+        except Exception:
+            return "Could not connect to Docker at /var/run/docker.sock"
+	    # --------------
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
