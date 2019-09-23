@@ -1,7 +1,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
 imports:
-  - https://raw.githubusercontent.com/micado-scale/tosca/v0.7.3/micado_types.yaml
+  - https://raw.githubusercontent.com/micado-scale/tosca/develop/micado_types.yaml
 
 repositories:
   docker_hub: https://hub.docker.com/
@@ -9,239 +9,116 @@ repositories:
 topology_template:
   node_templates:
     jqueuer-rabbit:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
+        image: rabbitmq:3.7
         env:
           - name: RABBITMQ_DEFAULT_USER
             value: admin
           - name: RABBITMQ_DEFAULT_PASS
             value: mypass
         ports:
-        - target: 5672
+        - port: 5672
       requirements:
-      - host:
-          node: jq-server
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: rabbitmq:3.7
-          repository: docker_hub
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-          configure:
-            inputs:
-              restartPolicy: "Always"
+      - host: jq-server
 
     jqueuer-redis:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
+        image: redis:alpine3.10
         command:
         - redis-server
         args:
         - --requirepass mypass
         ports:
-        - target: 6379
+        - port: 6379
       requirements:
-      - host:
-          node: jq-server
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: redis:alpine3.10
-          repository: docker_hub
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-          configure:
-            inputs:
-              restartPolicy: "Always"
+      - host: jq-server
 
     jqueuer-manager:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
+        image: micado/jqueuer-manager:develop
         ports:
         - containerPort: 9081
-        - target: 8081
+        - port: 8081
           nodePort: 30888
       requirements:
-      - host:
-          node: jq-server
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: jaydes/jqueuer-manager:dev 
-          repository: docker_hub
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-          configure:
-            inputs:
-              restartPolicy: "Always"
+      - host: jq-server
+      - volume: docker-socket-host-vol
 
-    jqueuer-statsd:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
+    jqueuer-pushgateway:
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
-        env:
-          - name: RABBIT_URL
-            value: http://rabbitmq:15672
-          - name: PUBLISH_PORT
-            value: "8090"
-          - name: RABBIT_EXPORTERS
-            value: queue
+        image: prom/pushgateway
         ports:
-        - containerPort: 9102
-        - target: 9125
-          protocol: UDP
+        - containerPort: 9091
+        - port: 9091
       requirements:
-      - host:
-          node: jq-server
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: prom/statsd-exporter:v0.11.2
-          repository: docker_hub
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-          configure:
-            inputs:
-              restartPolicy: "Always"
+      - host: jq-server
 
     jqueuer-agent:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: jaydes/jqueuer-agent:dev 
-          repository: docker_hub
+      type: tosca.nodes.MiCADO.Container.Application.Docker.DaemonSet
+      properties:
+        image: micado/jqueuer-agent:develop
+        env:
+        - name: PUSHGATEWAY_SERVICE_NAME
+          value: jqueuer-pushgateway
+        - name: PUSHGATEWAY_PORT
+          value: "9091"
       requirements:
-        - host:
-            node: worker-node
-        - volume:
-            node: docker-binary-host-vol
-            relationship:
-              type: tosca.relationships.AttachesTo
-              properties:
-                location: /usr/bin/docker
-        - volume:
-            node: docker-socket-host-vol
-            relationship:
-              type: tosca.relationships.AttachesTo
-              properties:
-                location: /var/run/docker.sock
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-            inputs:
-              kind: DaemonSet
-          configure:
-            inputs:
-              restartPolicy: "Always"
+        - host: worker-node
+        - volume: docker-binary-host-vol
+        - volume: docker-socket-host-vol
 
     docker-binary-host-vol:
-      type: tosca.nodes.MiCADO.Container.Volume
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
-        name: docker-bin
-      interfaces:
-        Kubernetes:
-          create:
-            inputs:
-              hostPath:
-                path: /usr/bin/docker
+        path: /usr/bin/docker
 
     docker-socket-host-vol:
-      type: tosca.nodes.MiCADO.Container.Volume
+      type: tosca.nodes.MiCADO.Container.Volume.HostPath
       properties:
-        name: docker-socket
-      interfaces:
-        Kubernetes:
-          create:
-            inputs:
-              hostPath:
-                path: /var/run/docker.sock
+        path: /var/run/docker.sock
 ###
 ### The container image below might need to be changed depending on your experimentation tool
 ###
     worker:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
+      type: tosca.nodes.MiCADO.Container.Application.Docker.Deployment
       properties:
+        image: osabuoun/repast
         tty: true
-      artifacts:
-        image:
-          type: tosca.artifacts.Deployment.Image.Container.Docker
-          file: osabuoun/repast
-          repository: docker_hub
       requirements:
-        - host:
-            node: worker-node
-      interfaces:
-        Kubernetes:
-          create:
-            implementation: image
-          configure:
-            inputs:
-              restartPolicy: "Always"
+        - host: worker-node
 ###
 ### The worker node is directly below, change resources if necessary
 ###
     worker-node:
-      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      type: tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
       properties:
-        num_cpus: 2000
-        mem_size: 2147483648
         vnc_password: secret
-        libdrive_id: ADD_YOUR_LIBRARY_DRIVE_ID_HERE
-        public_key_id: ADD_YOUR_PUBLIC_KEY_ID_HERE
+        libdrive_id: <INSERT_LIBRARY_DRIVE_ID_HERE>
+        public_key_id: <INSERT_PUBLIC_KEY_ID_HERE>
         nics:
-        - firewall_policy: ADD_YOUR_FIREWALL_POLICY_ID_HERE
+        - firewall_policy: <INSERT_FIREWALL_POLICY_ID_HERE>
           ip_v4_conf:
             conf: dhcp
-      interfaces:
-        Occopus:
-          create:
-            inputs:
-              interface_cloud: cloudsigma
-              endpoint_cloud: ADD_YOUR_ENDPOINT
-      capabilities:
-        host:
-          properties:
-            num_cpus: 2
-            mem_size: 2 GB
 
     jq-server:
-      type: tosca.nodes.MiCADO.CloudSigma.Compute
+      type: tosca.nodes.MiCADO.CloudSigma.Compute.Occo.small
       properties:
-        num_cpus: 2000
-        mem_size: 2147483648
         vnc_password: secret
-        libdrive_id: ADD_YOUR_LIBRARY_DRIVE_ID_HERE
-        public_key_id: ADD_YOUR_PUBLIC_KEY_ID_HERE
+        libdrive_id: <INSERT_LIBRARY_DRIVE_ID_HERE>
+        public_key_id: <INSERT_PUBLIC_KEY_ID_HERE>
         nics:
-        - firewall_policy: ADD_YOUR_FIREWALL_POLICY_ID_HERE
+        - firewall_policy: <INSERT_FIREWALL_POLICY_ID_HERE>
           ip_v4_conf:
-            conf: dhcp        
+            conf: dhcp
         context:
           append: true
           cloud_config: |
             runcmd:
             - echo never > /sys/kernel/mm/transparent_hugepage/enabled
-      interfaces:
-        Occopus:
-          create:
-            inputs:
-              interface_cloud: cloudsigma
-              endpoint_cloud: ADD_YOUR_ENDPOINT
-      capabilities:
-        host:
-          properties:
-            num_cpus: 2
-            mem_size: 2 GB
 ###
 ### The policies are below
 ###
@@ -251,11 +128,11 @@ topology_template:
         targets: [ worker-node ]
         properties:
           sources:
-          - 'jqueuer-statsd:9102'
+          - 'jqueuer-pushgateway:9091'
           - 'jqueuer-manager:9081'
           constants:
-            MAXNODES: 4 
-            MAXCONTAINERS: 4
+            MAXNODES: 10
+            MAXCONTAINERS: 10
             EXPERIMENT_ID: exp_123456789_123
           queries:
             AET: "jqueuer_single_task_duration{experiment_id='{{EXPERIMENT_ID}}'}"
@@ -270,6 +147,8 @@ topology_template:
           min_instances: 0
           max_instances: "{{MAXNODES}}"
           scaling_rule: |
+            if not JOBSFAIL:
+              JOBSFAIL = 0
             reqnodes=0
             if COMPLETED and not ITEMS:
               ITEMS = TOTALJOBS - COMPLETED
@@ -277,7 +156,7 @@ topology_template:
               AET = CALC_AET
             if not COMPLETED:
               ITEMS = TOTALJOBS
-            if ITEMS>0:              
+            if ITEMS-JOBSFAIL>0:
               calculation = ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS))
               if calculation <= 0:
                 calculation = ITEMS
@@ -300,6 +179,8 @@ topology_template:
           min_instances: 0
           max_instances: "{{MAXCONTAINERS}}"
           scaling_rule: |
+            if not JOBSFAIL:
+              JOBSFAIL = 0
             if COMPLETED and not ITEMS:
               ITEMS = TOTALJOBS - COMPLETED
             if COMPLETED>4:
@@ -311,7 +192,7 @@ topology_template:
             print "Length of queue:", ITEMS
             print "Failed jobs:", JOBSFAIL
             required_count = 0
-            if ITEMS>0:
+            if ITEMS-JOBSFAIL>0:
               calculation = ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS))
               if calculation <= 0:
                 calculation = ITEMS
