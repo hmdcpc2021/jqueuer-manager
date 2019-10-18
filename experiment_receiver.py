@@ -4,6 +4,7 @@ import ast
 import random
 import urllib.parse
 import docker
+import logging
 
 import subprocess
 import monitoring
@@ -14,6 +15,7 @@ from pprint import pprint
 from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_service_name
 from experiment import Experiment
 
+logger = logging.getLogger(__name__)
 
 def add_experiment(experiment_json):
     """ Add an experiment """
@@ -71,8 +73,7 @@ def record_worker_metrics(metric_info):
     """ Record metric received from worker """
     metric_type = metric_info["metric_type"]
     labels = metric_info["labels"]
-    print(metric_type)
-    print(labels)
+    logger.info("Inside record_worker_metrics. The metric_type: {} and the labels are: {}".format(metric_type,labels))
     data_back = "Metric of type {} is received and recorded".format(metric_type)
     if metric_type.lower() == "add_worker":
         monitoring.add_worker(labels["node_id"],labels["experiment_id"],labels["service_name"])
@@ -120,6 +121,7 @@ class HTTP(BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
+        logger.info("Inside post. The path is: {}".format(self.path))
         # Processing POST requests
         content_length = None
         data_json = None
@@ -133,6 +135,7 @@ class HTTP(BaseHTTPRequestHandler):
             pass
         except Exception as e:
             print("Error in parsing the content_length and packet data")
+            logger.error("Error in parsing the content_length and packet data")
         data_back = ""
 
         if self.path == "/experiment/result":
