@@ -72,8 +72,7 @@ def del_experiment(delete_form):
 def record_worker_metrics(metric_info):
     """ Record metric received from worker """
     metric_type = metric_info["metric_type"]
-    labels = metric_info["labels"]
-    logger.info("Inside record_worker_metrics. The metric_type: {} and the labels are: {}".format(metric_type,labels))
+    logger.info("Inside record_worker_metrics. The metric_type: {}".format(metric_type))
     data_back = "Metric of type {} is received and recorded".format(metric_type)
     if metric_type.lower() == "add_worker":
         monitoring.add_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])

@@ -37,7 +37,7 @@ def experiment_task_duration(experiment_id, service_name, single_task_duration):
     task_dur.labels(experiment_id, service_name).set(single_task_duration)
 
 # J-queuer Agent metrics
-node_counter = Counter("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id" "service_name"])
+node_counter = Counter("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name"])
 job_started_timestamp = Gauge("jqueuer_job_started_timestamp","jqueuer_job_started_timestamp",["node_id","experiment_id","service_name","job_id"])
 job_running_timestamp = Gauge("jqueuer_job_running_timestamp","jqueuer_job_running_timestamp",["node_id","experiment_id","service_name","job_id"])
 job_running = Gauge("jqueuer_job_running","jqueuer_job_running",["node_id","experiment_id","service_name","qworker_id","job_id"])
