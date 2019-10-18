@@ -76,21 +76,21 @@ def record_worker_metrics(metric_info):
     logger.info("Inside record_worker_metrics. The metric_type: {} and the labels are: {}".format(metric_type,labels))
     data_back = "Metric of type {} is received and recorded".format(metric_type)
     if metric_type.lower() == "add_worker":
-        monitoring.add_worker(labels["node_id"],labels["experiment_id"],labels["service_name"])
+        monitoring.add_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])
     elif metric_type.lower() == "terminate_worker":
-        monitoring.terminate_worker(labels["node_id"],labels["experiment_id"],labels["service_name"])
+        monitoring.terminate_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])
     elif metric_type.lower() == "run_job":
-        monitoring.run_job(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"])
+        monitoring.run_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])
     elif metric_type.lower() == "terminate_job":
-        monitoring.terminate_job(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["start_time"])
+        monitoring.terminate_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
     elif metric_type.lower() == "job_failed":
-        monitoring.job_failed(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["fail_time"])
+        monitoring.job_failed(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
     elif metric_type.lower() == "run_task":
-        monitoring.run_task(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"])
+        monitoring.run_task(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"])
     elif metric_type.lower() == "terminate_task":
-        monitoring.terminate_task(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"],labels["start_time"])
+        monitoring.terminate_task(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["start_time"])
     elif metric_type.lower() == "task_failed":
-        monitoring.task_failed(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"],labels["fail_time"])
+        monitoring.task_failed(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["fail_time"])
     else:
         data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
     return data_back
