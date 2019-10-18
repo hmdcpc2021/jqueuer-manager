@@ -6,6 +6,7 @@ import urllib.parse
 import docker
 
 import subprocess
+import monitoring
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from pprint import pprint
@@ -66,6 +67,32 @@ def del_experiment(delete_form):
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
+def record_worker_metrics(metric_info):
+    """ Record metric received from worker """
+    metric_type = metric_info["metric_type"]
+    labels = metric_info["labels"]
+    print(metric_type)
+    print(labels)
+    data_back = "Metric of type {} is received and recorded".format(metric_type)
+    if metric_type.lower() == "add_worker":
+        monitoring.add_worker(labels["node_id"],labels["experiment_id"],labels["service_name"])
+    elif metric_type.lower() == "terminate_worker":
+        monitoring.terminate_worker(labels["node_id"],labels["experiment_id"],labels["service_name"])
+    elif metric_type.lower() == "run_job":
+        monitoring.run_job(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"])
+    elif metric_type.lower() == "terminate_job":
+        monitoring.terminate_job(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["start_time"])
+    elif metric_type.lower() == "job_failed":
+        monitoring.job_failed(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["fail_time"])
+    elif metric_type.lower() == "run_task":
+        monitoring.run_task(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"])
+    elif metric_type.lower() == "terminate_task":
+        monitoring.terminate_task(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"],labels["start_time"])
+    elif metric_type.lower() == "task_failed":
+        monitoring.task_failed(labels["node_id"],labels["experiment_id"],labels["service_name"],labels["qworker_id"],labels["job_id"],labels["task_id"],labels["fail_time"])
+    else:
+        data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
+    return data_back
 
 class HTTP(BaseHTTPRequestHandler):
     """ HTTP class
@@ -121,6 +148,8 @@ class HTTP(BaseHTTPRequestHandler):
             data_back = add_experiment(data_json)
         elif self.path == "/experiment/del":
             data_back = del_experiment(data_json)
+        elif self.path == "/experiment/metrics":
+            data_back = record_worker_metrics(data_json)
 
         self._set_headers()
         self.wfile.write(bytes(str(data_back), "utf-8"))
