@@ -15,6 +15,7 @@ from pprint import pprint
 from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_service_name
 from experiment import Experiment
 
+num_nodes_to_scale_down = 0
 logger = logging.getLogger(__name__)
 
 def add_experiment(experiment_json):
@@ -69,10 +70,10 @@ def del_experiment(delete_form):
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
-def record_worker_metrics(metric_info):
+def record_worker_metrics(self,metric_info):
     """ Record metric received from worker """
     metric_type = metric_info["metric_type"]
-    logger.info("Inside record_worker_metrics. The metric_type: {}".format(metric_type))
+    logger.info("Inside record_worker_metrics: The value of self.num_nodes_to_scale_down is: {}".format(self.num_nodes_to_scale_down))
     data_back = "Metric of type {} is received and recorded".format(metric_type)
     if metric_type.lower() == "add_worker":
         monitoring.add_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])
@@ -82,8 +83,16 @@ def record_worker_metrics(metric_info):
         monitoring.run_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])
     elif metric_type.lower() == "terminate_job":
         monitoring.terminate_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
+        if self.num_nodes_to_scale_down > 0:
+            logger.info("terminate job - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
+            data_back = "stop_worker"
+            self.num_nodes_to_scale_down = self.num_nodes_to_scale_down -1 
     elif metric_type.lower() == "job_failed":
         monitoring.job_failed(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
+        if self.num_nodes_to_scale_down > 0:
+            logger.info("job failed - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
+            data_back = "stop_worker"
+            self.num_nodes_to_scale_down = self.num_nodes_to_scale_down -1
     elif metric_type.lower() == "run_task":
         monitoring.run_task(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"])
     elif metric_type.lower() == "terminate_task":
@@ -94,6 +103,19 @@ def record_worker_metrics(metric_info):
         data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
     return data_back
 
+def inform_event(self,event_info):
+    """ Receive information about external events """
+    event_type = event_info["event_type"]
+    data_back = ""
+    if(event_type.lower() == "scale_down"):
+        if "num_nodes" in event_info:
+            self.num_nodes_to_scale_down = event_info["num_nodes"]
+        else:
+            data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
+    else:
+        data_back = "Event of type {} does not match with any known events.".format(event_type)
+    return data_back
+    
 class HTTP(BaseHTTPRequestHandler):
     """ HTTP class
     Serve HTTP
@@ -151,7 +173,9 @@ class HTTP(BaseHTTPRequestHandler):
         elif self.path == "/experiment/del":
             data_back = del_experiment(data_json)
         elif self.path == "/experiment/metrics":
-            data_back = record_worker_metrics(data_json)
+            data_back = record_worker_metrics(self,data_json)
+        elif self.path == "/experiment/inform":
+            data_back = inform_event(self,data_json)
 
         self._set_headers()
         self.wfile.write(bytes(str(data_back), "utf-8"))
