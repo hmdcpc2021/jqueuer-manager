@@ -79,6 +79,9 @@ def terminate_job(node_id, experiment_id, service_name, qworker_id, job_id, star
     job_accomplished.labels(node_id,experiment_id,service_name,qworker_id,job_id).set(1)
     job_running.labels(node_id,experiment_id,service_name,qworker_id,job_id).set(0)
 
+def terminate_retried_job(node_id, experiment_id, service_name, qworker_id, job_id):
+    job_running.labels(node_id,experiment_id,service_name,qworker_id,job_id).set(0)
+
 def job_failed(node_id, experiment_id, service_name, qworker_id, job_id, fail_time):
     elapsed_time = time.time() - fail_time
     job_failed_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
