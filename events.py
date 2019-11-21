@@ -38,14 +38,13 @@ class GossipStepEvent(bootsteps.StartStopStep):
         # ]
         # self.last_size = None
 
-    def on_cluster_size_change(self, worker):
-        self.
-        cluster_size = len(list(self.c.gossip.state.alive_workers()))
-        if cluster_size != self.last_size:
-            for task in self.tasks:
-                task.rate_limit = 1.0 / cluster_size
-            self.c.reset_rate_limits()
-            self.last_size = cluster_size
+    # def on_cluster_size_change(self, worker):
+    #     cluster_size = len(list(self.c.gossip.state.alive_workers()))
+    #     if cluster_size != self.last_size:
+    #         for task in self.tasks:
+    #             task.rate_limit = 1.0 / cluster_size
+    #         self.c.reset_rate_limits()
+    #         self.last_size = cluster_size
     
     def on_node_join(self, worker):
         w = (Worker)(worker)
