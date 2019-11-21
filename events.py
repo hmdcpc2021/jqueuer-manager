@@ -29,14 +29,14 @@ class GossipStepEvent(bootsteps.StartStopStep):
 
     def start(self, c):
         self.c = c
-        self.c.gossip.on.node_join.add(self.on_cluster_size_change)
-        self.c.gossip.on.node_leave.add(self.on_cluster_size_change)
+        self.c.gossip.on.node_join.add(self.on_node_join)
+        self.c.gossip.on.node_leave.add(self.on_node_leave)
         self.c.gossip.on.node_lost.add(self.on_node_lost)
-        self.tasks = [
-            self.app.tasks['proj.tasks.add']
-            self.app.tasks['proj.tasks.mul']
-        ]
-        self.last_size = None
+        # self.tasks = [
+        #     self.app.tasks['proj.tasks.add']
+        #     self.app.tasks['proj.tasks.mul']
+        # ]
+        # self.last_size = None
 
     def on_cluster_size_change(self, worker):
         self.
