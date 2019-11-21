@@ -5,6 +5,8 @@ import sys
 
 from celery import Celery
 from celery.bin import worker
+from kombu import Connection, Consumer
+from events import WorkerStepEvent, GossipStepEvent
 
 import parameters as _params
 import job_operations
@@ -43,9 +45,12 @@ job_manager_app = init_job_manager()
 def start_job_manager():
     # Initializing the job manager app
     job_manager_app = init_job_manager()
-
+    job_manager_app.steps['worker'].add(WorkerStepEvent)
+    job_manager_app.steps['consumer'].add(GossipStepEvent)
+    
     # creating the worker with the job manager app
     job_manager_worker = worker.worker(app=job_manager_app)
+    
 
     # Creating the options
     job_manager_options = {
