@@ -54,20 +54,6 @@ def del_experiment(delete_form):
         print(e)
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
-        # Restart Pushgateway container
-        client = None
-        try:
-            client = docker.from_env()
-            for container in client.containers.list():
-                container_service_name = (
-                    container.labels.get("io.kubernetes.container.name")
-                    or container.name
-                )
-                if pushgateway_service_name.lower() in container_service_name.lower():
-                    container.restart()
-        except Exception:
-            return "Could not connect to Docker at /var/run/docker.sock"
-	    # --------------
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
@@ -79,31 +65,31 @@ def record_worker_metrics(metric_info):
         logger.info("Inside record_worker_metrics: The value of num_nodes_to_scale_down is: {0}".format(num_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
         if metric_type.lower() == "run_job":
-            monitoring.run_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])
+            monitoring.run_job(metric_info["qworker_id"],metric_info["job_id"])
         elif metric_type.lower() == "terminate_retried_job":
-            monitoring.terminate_retried_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])
+            monitoring.terminate_running_job(metric_info["qworker_id"],metric_info["job_id"])
             if num_nodes_to_scale_down > 0:
                 logger.info("retry job - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
                 data_back = "stop_worker"
                 num_nodes_to_scale_down = num_nodes_to_scale_down -1
         elif metric_type.lower() == "terminate_job":
-            monitoring.terminate_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
+            monitoring.terminate_job(metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
             if num_nodes_to_scale_down > 0:
                 logger.info("terminate job - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
                 data_back = "stop_worker"
                 num_nodes_to_scale_down = num_nodes_to_scale_down -1 
         elif metric_type.lower() == "job_failed":
-            monitoring.job_failed(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
+            monitoring.job_failed(metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
             if num_nodes_to_scale_down > 0:
                 logger.info("job failed - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
                 data_back = "stop_worker"
                 num_nodes_to_scale_down = num_nodes_to_scale_down -1
         elif metric_type.lower() == "run_task":
-            monitoring.run_task(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"])
+            monitoring.run_task(metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"])
         elif metric_type.lower() == "terminate_task":
-            monitoring.terminate_task(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["start_time"])
+            monitoring.terminate_task(metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["start_time"])
         elif metric_type.lower() == "task_failed":
-            monitoring.task_failed(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["fail_time"])
+            monitoring.task_failed(metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"],metric_info["fail_time"])
         else:
             data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
         return data_back

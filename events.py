@@ -31,8 +31,9 @@ class GossipStepEvent(bootsteps.StartStopStep):
                 still_exist = True
         logger.info(log_message)
         if still_exist == False:
-            monitoring.terminate_worker(worker.hostname)
             logger.info("ossipStepEvent - on_cluster_size_change - Not exist and terminated")
+            monitoring.terminate_worker(worker.hostname)
+            
 
 
         # if cluster_size != self.last_size:
