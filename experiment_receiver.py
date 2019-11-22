@@ -78,11 +78,7 @@ def record_worker_metrics(metric_info):
         metric_type = metric_info["metric_type"]
         logger.info("Inside record_worker_metrics: The value of num_nodes_to_scale_down is: {0}".format(num_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
-        if metric_type.lower() == "add_worker":
-            monitoring.add_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])
-        elif metric_type.lower() == "terminate_worker":
-            monitoring.terminate_worker(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"])
-        elif metric_type.lower() == "run_job":
+        if metric_type.lower() == "run_job":
             monitoring.run_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])
         elif metric_type.lower() == "terminate_retried_job":
             monitoring.terminate_retried_job(metric_info["node_id"],metric_info["experiment_id"],metric_info["service_name"],metric_info["qworker_id"],metric_info["job_id"])

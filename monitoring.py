@@ -37,7 +37,7 @@ def experiment_task_duration(experiment_id, service_name, single_task_duration):
     task_dur.labels(experiment_id, service_name).set(single_task_duration)
 
 # J-queuer Agent metrics
-node_counter = Counter("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name"])
+node_counter = Counter("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name","qworker_id"])
 job_started_timestamp = Gauge("jqueuer_job_started_timestamp","jqueuer_job_started_timestamp",["node_id","experiment_id","service_name","job_id"])
 job_running_timestamp = Gauge("jqueuer_job_running_timestamp","jqueuer_job_running_timestamp",["node_id","experiment_id","service_name","job_id"])
 job_running = Gauge("jqueuer_job_running","jqueuer_job_running",["node_id","experiment_id","service_name","qworker_id","job_id"])
@@ -59,11 +59,13 @@ task_failed_timestamp = Gauge("jqueuer_task_failed_timestamp","jqueuer_task_fail
 task_failed_duration = Gauge("jqueuer_task_failed_duration","jqueuer_task_failed_duration",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 task_failed_ga = Gauge("jqueuer_task_failed","jqueuer_task_failed",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 
-def add_worker(node_id, experiment_id, service_name):
-    node_counter.labels(node_id,experiment_id,service_name).inc()
+def add_worker(worker_id):
+    worker_id = worker_id.split("@")[1]
+    node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).inc()
 
-def terminate_worker(node_id, experiment_id, service_name):
-    node_counter.labels(node_id, experiment_id, service_name).dec()
+def terminate_worker(worker_id):
+    worker_id = worker_id.split("@")[1]
+    node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).dec()
 
 def run_job(node_id, experiment_id, service_name, qworker_id, job_id):
     job_started_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
@@ -108,3 +110,21 @@ def task_failed(node_id, experiment_id, service_name, qworker_id, job_id, task_i
     task_failed_duration.labels(node_id,experiment_id,service_name,qworker_id,job_id,task_id).set(elapsed_time)
     task_failed_ga.labels(node_id,experiment_id,service_name,qworker_id,job_id,task_id).set(1)
     task_running.labels(node_id,experiment_id,service_name,qworker_id,job_id,task_id).set(0)
+
+# Get Worker ID
+def getNodeID(worker_id):
+    return worker_id.split("##")[0]
+
+
+# Get Service Name
+def getServiceName(worker_id):
+    return worker_id.split("##")[1]
+
+
+# Get Container ID
+def getContainerID(worker_id):
+    return worker_id.split("##")[2]
+
+# Get Experiment ID
+def getExperimentID(worker_id):
+    return worker_id.split("##")[3]
