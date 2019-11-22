@@ -54,4 +54,4 @@ class GossipStepEvent(bootsteps.StartStopStep):
         # in order to see if the worker recovered.
         # self.c.timer.call_after(10.0, self.on_cluster_size_change)
         logger.info('GossipStepEvent - on_node_lost - {0}'.format(worker.hostname))
-        self.c.timer.call_after(10.0, self.on_cluster_size_change)
+        self.c.timer.call_after(10.0, self.on_cluster_size_change, (worker,))
