@@ -23,7 +23,7 @@ task_dur = Gauge(JQUEUER_EXPERIMENT_TASK_DURATION, "Experiment task duration", [
 
 # Keep track of experiment statistics
 
-# Dictionary list of running jobs - key = worker_id, Value = list of jobs
+# Dictionary list of running jobs - key = worker_id, Value = {job_id,start_time}
 running_jobs = {}  
 
 
@@ -73,8 +73,7 @@ def add_worker(worker_id):
 
     worker_id = worker_id.split("@")[1]
     node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(1)
-    if worker_id not in running_jobs:
-        running_jobs[worker_id]=[]
+    
 
 def terminate_worker(worker_id):
     global running_jobs
@@ -83,20 +82,15 @@ def terminate_worker(worker_id):
     node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(0)
     # Terminate running jobs
     if worker_id in running_jobs:
-        list_job_ids = copy.deepcopy(running_jobs[worker_id])
-        for job_id in list_job_ids:
-            terminate_running_job(worker_id,job_id)
-        del running_jobs[worker_id]
+        entry = running_jobs['a']
+        terminate_running_job(worker_id,entry["job_id"])
     
 def run_job(qworker_id, job_id):
-    job_running_timestamp.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),job_id).set(time.time())
+    start_time = time.time()
+    job_running_timestamp.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),job_id).set(start_time)
     job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(1)
-    if qworker_id in running_jobs:
-        running_jobs[qworker_id].append(job_id)
-    else:
-        logger.info('run job - No key in the running_jobs dictionary exist for the following key:\n Worker_id: {0} '.format(qworker_id))
-
-
+    running_jobs[qworker_id]={'job_id':job_id, 'start_time':start_time}
+    
 def terminate_job(qworker_id, job_id, start_time):
     elapsed_time = time.time() - start_time
     node_id = getNodeID(qworker_id)
@@ -112,10 +106,7 @@ def terminate_running_job(qworker_id, job_id):
     global running_jobs
 
     job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(0)
-    if qworker_id in running_jobs and job_id in list(running_jobs[qworker_id]):
-        running_jobs[qworker_id].remove(job_id)
-    else:
-        logger.info('Terminate running job - Some of the following details are missing:\n Job_Id: {0} \n Worker_id: {1}'.format(job_id,qworker_id))
+    del running_jobs[qworker_id]
 
 def job_failed(qworker_id, job_id, fail_time):
     elapsed_time = time.time() - fail_time

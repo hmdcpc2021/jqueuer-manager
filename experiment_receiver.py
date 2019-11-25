@@ -16,6 +16,7 @@ from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_serv
 from experiment import Experiment
 
 num_nodes_to_scale_down = 0
+num_containers_to_scale_down = 0
 logger = logging.getLogger(__name__)
 lock = Lock()
 
@@ -58,11 +59,11 @@ def del_experiment(delete_form):
     return "Service {} not found in queue".format(service_name)
 
 def record_worker_metrics(metric_info):
-    global num_nodes_to_scale_down
+    global num_nodes_to_scale_down, , num_containers_to_scale_down
     """ Record metric received from worker """
     with lock:
         metric_type = metric_info["metric_type"]
-        logger.info("Inside record_worker_metrics: The value of num_nodes_to_scale_down is: {0}".format(num_nodes_to_scale_down))
+        logger.info("Inside record_worker_metrics: \n num_nodes_to_scale_down = {0} \n  num_containers_to_scale_down = {1}".format(num_nodes_to_scale_down, num_containers_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
         if metric_type.lower() == "run_job":
             monitoring.run_job(metric_info["qworker_id"],metric_info["job_id"])
@@ -95,15 +96,20 @@ def record_worker_metrics(metric_info):
         return data_back
 
 def inform_event(event_info):
-    global num_nodes_to_scale_down
+    global num_nodes_to_scale_down, num_containers_to_scale_down
     """ Receive information about external events """
     event_type = event_info["event_type"]
     data_back = ""
-    if(event_type.lower() == "scale_down"):
+    if (event_type.lower() == "scale_down_nodes"):
         if "num_nodes" in event_info:
             num_nodes_to_scale_down = event_info["num_nodes"]
         else:
             data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
+    elif (event_type.lower() == "scale_down_containers"):
+        if "num_containers" in event_info:
+            num_containers_to_scale_down = event_info["num_containers"]
+        else:
+            data_back = "Event of type {} must contain value for \"num_containers\" parameter.".format(event_type)
     else:
         data_back = "Event of type {} does not match with any known events.".format(event_type)
     return data_back
