@@ -107,12 +107,13 @@ def terminate_running_job(qworker_id, job_id):
     global running_jobs, list_nodes_to_scale_down
     job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(0)
     del running_jobs[qworker_id]
-    
+
     # check if node of the worker is idle and can be publish for release
     if len(list_nodes_to_scale_down) > 0:
         node_id = getNodeID(qworker_id)
         if node_id in list_nodes_to_scale_down and qworker_id not in running_jobs:
             idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(1)
+            node_counter.labels(getNodeID(qworker_id),getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
             list_nodes_to_scale_down.remove(node_id)
             return "stop_worker"
     return ""
