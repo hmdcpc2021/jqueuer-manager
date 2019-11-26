@@ -24,7 +24,8 @@ task_dur = Gauge(JQUEUER_EXPERIMENT_TASK_DURATION, "Experiment task duration", [
 # Keep track of experiment statistics
 
 # Dictionary list of running jobs - key = worker_id, Value = {job_id,start_time}
-running_jobs = {}  
+running_jobs = {}
+list_nodes_to_scale_down = []  
 
 
 # ---------------------------------------
@@ -67,7 +68,7 @@ task_accomplished = Gauge("jqueuer_task_accomplished","jqueuer_task_accomplished
 task_failed_timestamp = Gauge("jqueuer_task_failed_timestamp","jqueuer_task_failed_timestamp",["node_id","experiment_id","service_name","job_id","task_id"])
 task_failed_duration = Gauge("jqueuer_task_failed_duration","jqueuer_task_failed_duration",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 task_failed_ga = Gauge("jqueuer_task_failed","jqueuer_task_failed",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
-
+idle_nodes = Gauge("jqueuer_idle_nodes","jqueuer_idle_nodes",["node_id","experiment_id"])
 def add_worker(worker_id):
     global running_jobs
 
@@ -82,7 +83,7 @@ def terminate_worker(worker_id):
     node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(0)
     # Terminate running jobs
     if worker_id in running_jobs:
-        entry = running_jobs['a']
+        entry = running_jobs[worker_id]
         terminate_running_job(worker_id,entry["job_id"])
     
 def run_job(qworker_id, job_id):
@@ -100,13 +101,21 @@ def terminate_job(qworker_id, job_id, start_time):
     job_accomplished_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
     job_accomplished_duration.labels(node_id,experiment_id,service_name,job_id).set(elapsed_time)
     job_accomplished.labels(node_id,experiment_id,service_name,container_id,job_id).set(1)
-    terminate_running_job(qworker_id,job_id)
+    return terminate_running_job(qworker_id,job_id)
 
 def terminate_running_job(qworker_id, job_id):
-    global running_jobs
-
+    global running_jobs, list_nodes_to_scale_down
     job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(0)
     del running_jobs[qworker_id]
+    
+    # check if node of the worker is idle and can be publish for release
+    if len(list_nodes_to_scale_down) > 0:
+        node_id = getNodeID(qworker_id)
+        if node_id in list_nodes_to_scale_down and qworker_id not in running_jobs:
+            idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(1)
+            list_nodes_to_scale_down.remove(node_id)
+            return "stop_worker"
+    return ""
 
 def job_failed(qworker_id, job_id, fail_time):
     elapsed_time = time.time() - fail_time
@@ -117,7 +126,7 @@ def job_failed(qworker_id, job_id, fail_time):
     job_failed_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
     job_failed_duration.labels(node_id,experiment_id,service_name,job_id).set(elapsed_time)
     job_failed_ga.labels(node_id,experiment_id,service_name,container_id,job_id).set(1)
-    terminate_running_job(qworker_id,job_id)
+    return terminate_running_job(qworker_id,job_id)
 
 def run_task(qworker_id, job_id, task_id):
     node_id = getNodeID(qworker_id)

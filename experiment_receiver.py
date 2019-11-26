@@ -15,8 +15,6 @@ from pprint import pprint
 from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_service_name
 from experiment import Experiment
 
-num_nodes_to_scale_down = 0
-num_containers_to_scale_down = 0
 logger = logging.getLogger(__name__)
 lock = Lock()
 
@@ -59,32 +57,22 @@ def del_experiment(delete_form):
     return "Service {} not found in queue".format(service_name)
 
 def record_worker_metrics(metric_info):
-    global num_nodes_to_scale_down, num_containers_to_scale_down
     """ Record metric received from worker """
     with lock:
         metric_type = metric_info["metric_type"]
-        logger.info("Inside record_worker_metrics: \n num_nodes_to_scale_down = {0} \n  num_containers_to_scale_down = {1}".format(num_nodes_to_scale_down, num_containers_to_scale_down))
+        logger.info("Inside record_worker_metrics: \n num_nodes_to_scale_down = {0}".format(len(monitoring.list_nodes_to_scale_down)))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
         if metric_type.lower() == "run_job":
             monitoring.run_job(metric_info["qworker_id"],metric_info["job_id"])
         elif metric_type.lower() == "terminate_retried_job":
-            monitoring.terminate_running_job(metric_info["qworker_id"],metric_info["job_id"])
-            if num_nodes_to_scale_down > 0:
-                logger.info("retry job - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
-                data_back = "stop_worker"
-                num_nodes_to_scale_down = num_nodes_to_scale_down -1
+            ret_val = monitoring.terminate_running_job(metric_info["qworker_id"],metric_info["job_id"])
+            data_back = ret_val if ret_val != "" else data_back
         elif metric_type.lower() == "terminate_job":
-            monitoring.terminate_job(metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
-            if num_nodes_to_scale_down > 0:
-                logger.info("terminate job - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
-                data_back = "stop_worker"
-                num_nodes_to_scale_down = num_nodes_to_scale_down -1 
+            ret_val = monitoring.terminate_job(metric_info["qworker_id"],metric_info["job_id"],metric_info["start_time"])
+            data_back = ret_val if ret_val != "" else data_back
         elif metric_type.lower() == "job_failed":
-            monitoring.job_failed(metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
-            if num_nodes_to_scale_down > 0:
-                logger.info("job failed - qworkerid: {0}, job_id: {1}".format(metric_info["qworker_id"],metric_info["job_id"]))
-                data_back = "stop_worker"
-                num_nodes_to_scale_down = num_nodes_to_scale_down -1
+            ret_val = monitoring.job_failed(metric_info["qworker_id"],metric_info["job_id"],metric_info["fail_time"])
+            data_back = ret_val if ret_val != "" else data_back
         elif metric_type.lower() == "run_task":
             monitoring.run_task(metric_info["qworker_id"],metric_info["job_id"],metric_info["task_id"])
         elif metric_type.lower() == "terminate_task":
@@ -96,24 +84,50 @@ def record_worker_metrics(metric_info):
         return data_back
 
 def inform_event(event_info):
-    global num_nodes_to_scale_down, num_containers_to_scale_down
     """ Receive information about external events """
     event_type = event_info["event_type"]
     data_back = ""
     if (event_type.lower() == "scale_down_nodes"):
         if "num_nodes" in event_info:
-            num_nodes_to_scale_down = event_info["num_nodes"]
+            if len(monitoring.list_nodes_to_scale_down) == 0:
+                select_nodes_for_scale_down (event_info["num_nodes"])
         else:
             data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
-    elif (event_type.lower() == "scale_down_containers"):
-        if "num_containers" in event_info:
-            num_containers_to_scale_down = event_info["num_containers"]
-        else:
-            data_back = "Event of type {} must contain value for \"num_containers\" parameter.".format(event_type)
+    # elif (event_type.lower() == "scale_down_containers"):
+    #     if "num_containers" in event_info:
+    #         num_containers_to_scale_down = event_info["num_containers"]
+    #     else:
+    #         data_back = "Event of type {} must contain value for \"num_containers\" parameter.".format(event_type)
     else:
         data_back = "Event of type {} does not match with any known events.".format(event_type)
     return data_back
-    
+
+def select_nodes_for_scale_down(num_to_scale_down):
+    if len(monitoring.running_jobs) == 0:
+        return
+    monitoring.list_nodes_to_scale_down.clear()
+    # The nodes with earliest job start time will be selected
+    for i in range(num_to_scale_down):
+        dict_keys = list(monitoring.running_jobs.keys())
+        earliest = ""
+        earliest_start_time = -1
+        for j in range(len(monitoring.running_jobs)):
+            w_key = dict_keys[j]
+            start_time = monitoring.running_jobs[w_key]['start_time']
+            node_id = monitoring.getNodeID(w_key)
+            if node_id not in monitoring.list_nodes_to_scale_down:
+                if earliest_start_time == -1:
+                    earliest = w_key
+                    earliest_start_time = start_time
+                elif start_time < earliest_start_time:
+                    earliest = w_key
+                    earliest_start_time = start_time
+        # add into the list of scale_down nodes, if it is not already there
+        if earliest != "":
+            e_node_id = monitoring.getNodeID(earliest)
+            monitoring.list_nodes_to_scale_down.append(e_node_id)
+    logger.info("select_nodes_for_scale_down: \n lis_nodes_to_scale_down = {0}".format(monitoring.list_nodes_to_scale_down))            
+                
 class HTTP(BaseHTTPRequestHandler):
     """ HTTP class
     Serve HTTP
