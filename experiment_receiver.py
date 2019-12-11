@@ -85,22 +85,27 @@ def record_worker_metrics(metric_info):
 
 def inform_event(event_info):
     """ Receive information about external events """
-    event_type = event_info["event_type"]
-    data_back = ""
-    if (event_type.lower() == "scale_down_nodes"):
-        if "num_nodes" in event_info:
-            if len(monitoring.list_nodes_to_scale_down) == 0:
-                select_nodes_for_scale_down (event_info["num_nodes"])
+    with lock:
+        event_type = event_info["event_type"]
+        data_back = ""
+        if (event_type.lower() == "nodes_required"):
+            if "num_nodes" in event_info:
+                num_current_nodes = get_current_nodes_count()
+                nodes_required = event_info["num_nodes"]
+                diff = num_current_nodes - nodes_required
+                if diff> 0 and diff != len(monitoring.list_nodes_to_scale_down):
+                    select_nodes_for_scale_down (diff)
+                elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
+                    monitoring.list_nodes_to_scale_down.clear()
+            else:
+                data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
         else:
-            data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
-    # elif (event_type.lower() == "scale_down_containers"):
-    #     if "num_containers" in event_info:
-    #         num_containers_to_scale_down = event_info["num_containers"]
-    #     else:
-    #         data_back = "Event of type {} must contain value for \"num_containers\" parameter.".format(event_type)
-    else:
-        data_back = "Event of type {} does not match with any known events.".format(event_type)
-    return data_back
+            data_back = "Event of type {} does not match with any known events.".format(event_type)
+        return data_back
+
+def get_current_nodes_count():
+    num_current_nodes = 0
+    return num_current_nodes
 
 def select_nodes_for_scale_down(num_to_scale_down):
     if len(monitoring.running_jobs) == 0:

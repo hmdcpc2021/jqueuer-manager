@@ -25,7 +25,7 @@ task_dur = Gauge(JQUEUER_EXPERIMENT_TASK_DURATION, "Experiment task duration", [
 
 # Dictionary list of running jobs - key = worker_id, Value = {job_id,start_time}
 running_jobs = {}
-list_nodes_to_scale_down = []  
+list_nodes_to_scale_down = []
 
 
 # ---------------------------------------
@@ -75,7 +75,6 @@ def add_worker(worker_id):
     worker_id = worker_id.split("@")[1]
     node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(1)
     
-
 def terminate_worker(worker_id):
     global running_jobs
 
@@ -111,13 +110,20 @@ def terminate_running_job(qworker_id, job_id):
     # check if node of the worker is idle and can be publish for release
     if len(list_nodes_to_scale_down) > 0:
         node_id = getNodeID(qworker_id)
-        if node_id in list_nodes_to_scale_down and qworker_id not in running_jobs:
+        if node_id in list_nodes_to_scale_down and check_node_running_jobs(node_id) == False:
             idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(1)
             node_counter.labels(getNodeID(qworker_id),getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
             list_nodes_to_scale_down.remove(node_id)
             return "stop_worker"
     return ""
 
+def check_node_running_jobs(node_id):
+    global running_jobs
+    for w_id in running_jobs:
+        if getNodeID(w_id) == node_id:
+            return True
+    return False             
+        
 def job_failed(qworker_id, job_id, fail_time):
     elapsed_time = time.time() - fail_time
     node_id = getNodeID(qworker_id)
