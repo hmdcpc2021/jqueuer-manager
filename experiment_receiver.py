@@ -90,35 +90,43 @@ def inform_event(event_info):
         data_back = ""
         if (event_type.lower() == "nodes_required"):
             if "num_nodes" in event_info:
-                num_current_nodes = get_current_nodes_count()
+                list_active_nodes = get_current_active_nodes()
                 nodes_required = event_info["num_nodes"]
-                diff = num_current_nodes - nodes_required
+                diff = len(list_active_nodes) - nodes_required
                 if diff> 0 and diff != len(monitoring.list_nodes_to_scale_down):
                     select_nodes_for_scale_down (diff)
+                    monitoring.check_immediate_node_release()   
                 elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
                     monitoring.list_nodes_to_scale_down.clear()
+                logger.info("Inform_even: \n num_nodes = {0} \n list_active_nodes = {1} \n list_nodes_to_scale_down = {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
             else:
                 data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
         else:
             data_back = "Event of type {} does not match with any known events.".format(event_type)
         return data_back
 
-def get_current_nodes_count():
-    if len(monitoring.running_jobs) == 0:
-        return 0
+def get_current_active_nodes():
     list_current_nodes = []
-    for w_key in monitoring.running_jobs:
-        node_id = monitoring.getNodeID(w_key)
+    for act_worker in monitoring.list_active_workers:
+        node_id = monitoring.getNodeID(act_worker)
         if node_id not in list_current_nodes:
             list_current_nodes.append(node_id)
-    return len(list_current_nodes)
+    return list_current_nodes
 
 def select_nodes_for_scale_down(num_to_scale_down):
-    if len(monitoring.running_jobs) == 0:
-        return
     monitoring.list_nodes_to_scale_down.clear()
+    # Check if there are idle workers
+    if len(monitoring.list_active_workers) != len (monitoring.running_jobs):
+        for w_key in monitoring.list_active_workers:
+            node_id = monitoring.getNodeID(w_key)
+            if w_key not in monitoring.running_jobs and node_id not in monitoring.list_nodes_to_scale_down:
+                monitoring.list_nodes_to_scale_down.append(node_id)
+            if len(monitoring.list_nodes_to_scale_down) == num_to_scale_down:
+                break
+
     # The nodes with earliest job start time will be selected
-    for i in range(num_to_scale_down):
+    remaining_nodes = num_to_scale_down - len(monitoring.list_nodes_to_scale_down)
+    for i in range(remaining_nodes):
         dict_keys = list(monitoring.running_jobs.keys())
         earliest = ""
         earliest_start_time = -1
@@ -137,7 +145,6 @@ def select_nodes_for_scale_down(num_to_scale_down):
         if earliest != "":
             e_node_id = monitoring.getNodeID(earliest)
             monitoring.list_nodes_to_scale_down.append(e_node_id)
-    logger.info("select_nodes_for_scale_down: \n lis_nodes_to_scale_down = {0}".format(monitoring.list_nodes_to_scale_down))            
                 
 class HTTP(BaseHTTPRequestHandler):
     """ HTTP class
