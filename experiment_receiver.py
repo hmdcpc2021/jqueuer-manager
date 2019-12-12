@@ -104,8 +104,14 @@ def inform_event(event_info):
         return data_back
 
 def get_current_nodes_count():
-    num_current_nodes = 0
-    return num_current_nodes
+    if len(monitoring.running_jobs) == 0:
+        return 0
+    list_current_nodes = []
+    for w_key in monitoring.running_jobs:
+        node_id = monitoring.getNodeID(w_key)
+        if node_id not in list_current_nodes:
+            list_current_nodes.append(node_id)
+    return len(list_current_nodes)
 
 def select_nodes_for_scale_down(num_to_scale_down):
     if len(monitoring.running_jobs) == 0:
