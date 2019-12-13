@@ -53,6 +53,7 @@ def del_experiment(delete_form):
         print(e)
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
+        monitoring.clear_lists()
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 

@@ -53,6 +53,12 @@ def experiment_deadline(experiment_id, service_name, experiment_deadline):
 def experiment_task_duration(experiment_id, service_name, single_task_duration):
     task_dur.labels(experiment_id, service_name).set(single_task_duration)
 
+def clear_lists():
+    global running_jobs, list_active_workers, list_nodes_to_scale_down
+    running_jobs.clear()
+    list_active_workers.clear()
+    list_nodes_to_scale_down.clear()
+    
 # J-queuer Agent metrics
 node_counter = Gauge("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name","qworker_id"])
 job_running_timestamp = Gauge("jqueuer_job_running_timestamp","jqueuer_job_running_timestamp",["node_id","experiment_id","service_name","job_id"])
