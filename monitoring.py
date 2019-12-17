@@ -58,7 +58,7 @@ def clear_lists():
     running_jobs.clear()
     list_active_workers.clear()
     list_nodes_to_scale_down.clear()
-    
+
 # J-queuer Agent metrics
 node_counter = Gauge("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name","qworker_id"])
 job_running_timestamp = Gauge("jqueuer_job_running_timestamp","jqueuer_job_running_timestamp",["node_id","experiment_id","service_name","job_id"])
@@ -100,7 +100,7 @@ def terminate_worker(worker_id):
         job_running.labels(node_id, getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
         del running_jobs[worker_id]
     # Handle the list_of_active_worker
-    if node_id in list_active_workers:
+    if worker_id in list_active_workers:
         list_active_workers.remove(worker_id)
     # Handle, if node of the work is previously selected for deletion
     if len(list_nodes_to_scale_down) > 0 and node_id in list_nodes_to_scale_down and check_node_running_jobs(node_id) == False:
