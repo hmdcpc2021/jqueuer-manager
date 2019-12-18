@@ -58,6 +58,7 @@ def del_experiment(delete_form):
     return "Service {} not found in queue".format(service_name)
 
 def record_worker_metrics(metric_info):
+    global lock
     """ Record metric received from worker """
     with lock:
         metric_type = metric_info["metric_type"]
@@ -85,6 +86,7 @@ def record_worker_metrics(metric_info):
         return data_back
 
 def inform_event(event_info):
+    global lock
     """ Receive information about external events """
     with lock:
         event_type = event_info["event_type"]
