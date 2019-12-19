@@ -135,7 +135,7 @@ def terminate_running_job(qworker_id, job_id):
             node_counter.labels(getNodeID(qworker_id),getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
             list_active_workers.remove(qworker_id)
             if check_node_running_jobs(node_id) == False:
-                idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(3)
+                idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(node_id)
                 list_nodes_to_scale_down.remove(node_id)
             return "stop_worker"
     return ""
@@ -152,7 +152,7 @@ def check_immediate_node_release():
                 node_counter.labels(node_id,exp_id,getServiceName(worker_id),getContainerID(worker_id)).set(0)
                 list_active_workers.remove(worker_id)
             # expose metric
-            idle_nodes.labels(node_id, exp_id).set(3)
+            idle_nodes.labels(node_id, exp_id).set(node_id)
             list_nodes_to_scale_down.remove(node_id)
         
 def get_node_workers(node_id):
