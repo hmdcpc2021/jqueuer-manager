@@ -80,6 +80,7 @@ task_failed_timestamp = Gauge("jqueuer_task_failed_timestamp","jqueuer_task_fail
 task_failed_duration = Gauge("jqueuer_task_failed_duration","jqueuer_task_failed_duration",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 task_failed_ga = Gauge("jqueuer_task_failed","jqueuer_task_failed",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 idle_nodes = Gauge("jqueuer_idle_nodes","jqueuer_idle_nodes",["node_id","experiment_id"])
+idle_nodes.labels("99", "99").set(99)
 
 def add_worker(worker_id):
     global running_jobs, list_active_workers
@@ -135,7 +136,7 @@ def terminate_running_job(qworker_id, job_id):
             node_counter.labels(getNodeID(qworker_id),getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
             list_active_workers.remove(qworker_id)
             if check_node_running_jobs(node_id) == False:
-                idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(node_id)
+                idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(1)
                 list_nodes_to_scale_down.remove(node_id)
             return "stop_worker"
     return ""
@@ -152,7 +153,7 @@ def check_immediate_node_release():
                 node_counter.labels(node_id,exp_id,getServiceName(worker_id),getContainerID(worker_id)).set(0)
                 list_active_workers.remove(worker_id)
             # expose metric
-            idle_nodes.labels(node_id, exp_id).set(node_id)
+            idle_nodes.labels(node_id, exp_id).set(1)
             list_nodes_to_scale_down.remove(node_id)
         
 def get_node_workers(node_id):
