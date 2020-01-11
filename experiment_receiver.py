@@ -63,7 +63,7 @@ def record_worker_metrics(metric_info):
     with lock:
         metric_type = metric_info["metric_type"]
         list_active_nodes = get_current_active_nodes()
-        logger.info("record_worker_metrics: list_active_nodes = {0} \n list_nodes_to_scale_down = {}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
+        logger.info("record_worker_metrics: list_active_nodes = {0} \n list_nodes_to_scale_down = {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
         if metric_type.lower() == "run_job":
             monitoring.run_job(metric_info["qworker_id"],metric_info["job_id"])
