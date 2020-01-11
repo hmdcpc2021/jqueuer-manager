@@ -62,7 +62,8 @@ def record_worker_metrics(metric_info):
     """ Record metric received from worker """
     with lock:
         metric_type = metric_info["metric_type"]
-        logger.info("Inside record_worker_metrics: \n num_nodes_to_scale_down = {0}".format(len(monitoring.list_nodes_to_scale_down)))
+        list_active_nodes = get_current_active_nodes()
+        logger.info("record_worker_metrics: list_active_nodes = {0} \n list_nodes_to_scale_down = {}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
         if metric_type.lower() == "run_job":
             monitoring.run_job(metric_info["qworker_id"],metric_info["job_id"])
@@ -101,7 +102,7 @@ def inform_event(event_info):
                     monitoring.check_immediate_node_release()   
                 elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
                     monitoring.list_nodes_to_scale_down.clear()
-                logger.info("Inform_even: \n num_nodes = {0} \n list_active_nodes = {1} \n list_nodes_to_scale_down = {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
+                logger.info("Inform_event: \n num_nodes = {0} \n list_active_nodes = {1} \n list_nodes_to_scale_down = {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
             else:
                 data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
         else:
