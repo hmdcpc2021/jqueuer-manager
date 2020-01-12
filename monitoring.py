@@ -55,9 +55,13 @@ def experiment_task_duration(experiment_id, service_name, single_task_duration):
 
 def clear_lists():
     global running_jobs, list_active_workers, list_nodes_to_scale_down
-    running_jobs.clear()
     list_active_workers.clear()
     list_nodes_to_scale_down.clear()
+    for worker_id in running_jobs:
+        entry = running_jobs[worker_id]
+        job_id = entry["job_id"]
+        job_running.labels(getNodeID(worker_id), getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
+    running_jobs.clear()
 
 # J-queuer Agent metrics
 node_counter = Gauge("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name","qworker_id"])
