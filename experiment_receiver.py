@@ -32,6 +32,7 @@ def add_experiment(experiment_json):
     experiment_thread.start()
 
     experiments[experiment_id] = {"experiment": experiment, "thread": experiment_thread}
+    monitoring.start_experiment(experiment_id)
     return str(experiment_id) + " has been added & started successfully ! \n"
 
 
