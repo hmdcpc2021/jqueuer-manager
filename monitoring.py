@@ -84,9 +84,13 @@ task_failed_timestamp = Gauge("jqueuer_task_failed_timestamp","jqueuer_task_fail
 task_failed_duration = Gauge("jqueuer_task_failed_duration","jqueuer_task_failed_duration",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 task_failed_ga = Gauge("jqueuer_task_failed","jqueuer_task_failed",["node_id","experiment_id","service_name","qworker_id","job_id","task_id"])
 idle_nodes = Gauge("jqueuer_idle_nodes","jqueuer_idle_nodes",["node_id","experiment_id"])
+exp_deleted = Gauge("jqueuer_is_exp_deleted","jqueuer_is_exp_deleted",["experiment_id"])
 
 def start_experiment(experiment_id):
     idle_nodes.labels("99", experiment_id).set(99)
+
+def delete_experiment(experiment_id):
+    exp_deleted.labels(experiment_id).set(1)
 
 def add_worker(worker_id):
     global running_jobs, list_active_workers

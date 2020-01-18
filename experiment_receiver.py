@@ -17,8 +17,10 @@ from experiment import Experiment
 
 logger = logging.getLogger(__name__)
 lock = Lock()
+most_recent_experiment_id = ""
 
 def add_experiment(experiment_json):
+    global most_recent_experiment_id
     """ Add an experiment """
     private_id = (
         str(int(round(time.time() * 1000))) + "_" + str(random.randrange(100, 999))
@@ -33,10 +35,12 @@ def add_experiment(experiment_json):
 
     experiments[experiment_id] = {"experiment": experiment, "thread": experiment_thread}
     monitoring.start_experiment(experiment_id)
+    most_recent_experiment_id = experiment_id
     return str(experiment_id) + " has been added & started successfully ! \n"
 
 
 def del_experiment(delete_form):
+    global most_recent_experiment_id
     """ Delete an experiment """
     service_name = delete_form.get("container")
     try:
@@ -55,6 +59,9 @@ def del_experiment(delete_form):
     if backend_experiment_db.exists(service_name):
         backend_experiment_db.delete(service_name)
         monitoring.clear_lists()
+        if most_recent_experiment_id != "":
+            monitoring.delete_experiment(most_recent_experiment_id)
+            most_recent_experiment_id = ""
         return "Service {} removed from backend".format(service_name)
     return "Service {} not found in queue".format(service_name)
 
