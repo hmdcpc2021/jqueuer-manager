@@ -32,6 +32,8 @@ list_active_workers = []
 # List of nodes those are selected for deletion
 list_nodes_to_scale_down = []
 
+# current experiment id
+current_experiment_id = ""
 
 # ---------------------------------------
 
@@ -54,17 +56,17 @@ def experiment_task_duration(experiment_id, service_name, single_task_duration):
     task_dur.labels(experiment_id, service_name).set(single_task_duration)
 
 def clear_lists():
-    global running_jobs, list_active_workers, list_nodes_to_scale_down
+    global running_jobs, list_active_workers, list_nodes_to_scale_down, current_experiment_id
     list_active_workers.clear()
     list_nodes_to_scale_down.clear()
     for worker_id in running_jobs:
         entry = running_jobs[worker_id]
         job_id = entry["job_id"]
-        job_running.labels(getNodeID(worker_id), getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
+        job_running.labels(getNodeID(worker_id), current_experiment_id,getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
     running_jobs.clear()
 
 # J-queuer Agent metrics
-node_counter = Gauge("jqueuer_worker_count", "JQueuer Worker", ["node_id","experiment_id","service_name","qworker_id"])
+node_counter = Gauge("jqueuer_worker_count", "JQueuer Worker", ["node_id","service_name","qworker_id"])
 job_running_timestamp = Gauge("jqueuer_job_running_timestamp","jqueuer_job_running_timestamp",["node_id","experiment_id","service_name","job_id"])
 job_running = Gauge("jqueuer_job_running","jqueuer_job_running",["node_id","experiment_id","service_name","qworker_id","job_id"])
 job_started = Gauge("jqueuer_job_started","jqueuer_job_started",["node_id","experiment_id","service_name","qworker_id","job_id"])
@@ -87,28 +89,32 @@ idle_nodes = Gauge("jqueuer_idle_nodes","jqueuer_idle_nodes",["node_id","experim
 exp_deleted = Gauge("jqueuer_is_exp_deleted","jqueuer_is_exp_deleted",["experiment_id"])
 
 def start_experiment(experiment_id):
+    global current_experiment_id
+    current_experiment_id = experiment_id
     idle_nodes.labels("99", experiment_id).set(99)
 
-def delete_experiment(experiment_id):
-    exp_deleted.labels(experiment_id).set(1)
+def delete_experiment():
+    global current_experiment_id
+    exp_deleted.labels(current_experiment_id).set(1)
+    current_experiment_id = ""
 
 def add_worker(worker_id):
     global running_jobs, list_active_workers
     worker_id = worker_id.split("@")[1]
-    node_counter.labels(getNodeID(worker_id),getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(1)
+    node_counter.labels(getNodeID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(1)
     if worker_id not in list_active_workers:
         list_active_workers.append(worker_id)
                 
 def terminate_worker(worker_id):
-    global running_jobs, list_active_workers, list_nodes_to_scale_down
+    global running_jobs, list_active_workers, list_nodes_to_scale_down, current_experiment_id
     worker_id = worker_id.split("@")[1]
     node_id = getNodeID(worker_id)
-    node_counter.labels(node_id,getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id)).set(0)
+    node_counter.labels(node_id,getServiceName(worker_id),getContainerID(worker_id)).set(0)
     # Handle if there is any running job
     if worker_id in running_jobs:
         entry = running_jobs[worker_id]
         job_id = entry["job_id"]
-        job_running.labels(node_id, getExperimentID(worker_id),getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
+        job_running.labels(node_id, current_experiment_id,getServiceName(worker_id),getContainerID(worker_id),job_id).set(0)
         del running_jobs[worker_id]
     # Handle the list_of_active_worker
     if worker_id in list_active_workers:
@@ -117,26 +123,25 @@ def terminate_worker(worker_id):
     if len(list_nodes_to_scale_down) > 0 and node_id in list_nodes_to_scale_down and check_node_running_jobs(node_id) == False:
         list_nodes_to_scale_down.remove(node_id)
 
-def run_job(qworker_id, job_id):
+def run_job(qworker_id, experiment_id, job_id):
     start_time = time.time()
-    job_running_timestamp.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),job_id).set(start_time)
-    job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(1)
+    job_running_timestamp.labels(getNodeID(qworker_id), experiment_id,getServiceName(qworker_id),job_id).set(start_time)
+    job_running.labels(getNodeID(qworker_id), experiment_id,getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(1)
     running_jobs[qworker_id]={'job_id':job_id, 'start_time':start_time}
     
-def terminate_job(qworker_id, job_id, start_time):
+def terminate_job(qworker_id, experiment_id, job_id, start_time):
     elapsed_time = time.time() - start_time
     node_id = getNodeID(qworker_id)
-    experiment_id = getExperimentID(qworker_id)
     service_name = getServiceName(qworker_id)
     container_id = getContainerID(qworker_id)
     job_accomplished_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
     job_accomplished_duration.labels(node_id,experiment_id,service_name,job_id).set(elapsed_time)
     job_accomplished.labels(node_id,experiment_id,service_name,container_id,job_id).set(1)
-    return terminate_running_job(qworker_id,job_id)
+    return terminate_running_job(qworker_id, experiment_id, job_id)
 
-def terminate_running_job(qworker_id, job_id):
+def terminate_running_job(qworker_id, experiment_id, job_id):
     global running_jobs, list_active_workers, list_nodes_to_scale_down
-    job_running.labels(getNodeID(qworker_id), getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(0)
+    job_running.labels(getNodeID(qworker_id), experiment_id,getServiceName(qworker_id),getContainerID(qworker_id),job_id).set(0)
     if qworker_id in running_jobs:
         del running_jobs[qworker_id]
 
@@ -144,10 +149,10 @@ def terminate_running_job(qworker_id, job_id):
     if len(list_nodes_to_scale_down) > 0:
         node_id = getNodeID(qworker_id)
         if node_id in list_nodes_to_scale_down:
-            node_counter.labels(getNodeID(qworker_id),getExperimentID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
+            node_counter.labels(getNodeID(qworker_id),getServiceName(qworker_id),getContainerID(qworker_id)).set(0)
             list_active_workers.remove(qworker_id)
             if check_node_running_jobs(node_id) == False:
-                idle_nodes.labels(node_id, getExperimentID(qworker_id)).set(1)
+                idle_nodes.labels(node_id, experiment_id).set(1)
                 list_nodes_to_scale_down.remove(node_id)
             return "stop_worker"
     return ""
@@ -160,8 +165,7 @@ def check_immediate_node_release():
             # Terminate workers
             exp_id = ""
             for worker_id in get_node_workers(node_id):
-                exp_id = getExperimentID(worker_id)
-                node_counter.labels(node_id,exp_id,getServiceName(worker_id),getContainerID(worker_id)).set(0)
+                node_counter.labels(node_id,getServiceName(worker_id),getContainerID(worker_id)).set(0)
                 list_active_workers.remove(worker_id)
             # expose metric
             idle_nodes.labels(node_id, exp_id).set(1)
@@ -182,29 +186,26 @@ def check_node_running_jobs(node_id):
             return True
     return False             
         
-def job_failed(qworker_id, job_id, fail_time):
+def job_failed(qworker_id, experiment_id, job_id, fail_time):
     elapsed_time = time.time() - fail_time
     node_id = getNodeID(qworker_id)
-    experiment_id = getExperimentID(qworker_id)
     service_name = getServiceName(qworker_id)
     container_id = getContainerID(qworker_id)
     job_failed_timestamp.labels(node_id,experiment_id,service_name,job_id).set(time.time())
     job_failed_duration.labels(node_id,experiment_id,service_name,job_id).set(elapsed_time)
     job_failed_ga.labels(node_id,experiment_id,service_name,container_id,job_id).set(1)
-    return terminate_running_job(qworker_id,job_id)
+    return terminate_running_job(qworker_id,experiment_id,job_id)
 
-def run_task(qworker_id, job_id, task_id):
+def run_task(qworker_id, experiment_id, job_id, task_id):
     node_id = getNodeID(qworker_id)
-    experiment_id = getExperimentID(qworker_id)
     service_name = getServiceName(qworker_id)
     container_id = getContainerID(qworker_id)
     task_running_timestamp.labels(node_id,experiment_id,service_name,job_id,task_id).set(time.time())
     task_running.labels(node_id,experiment_id,service_name,container_id,job_id,task_id).set(1)
 
-def terminate_task(qworker_id, job_id, task_id, start_time):
+def terminate_task(qworker_id, experiment_id, job_id, task_id, start_time):
     elapsed_time = time.time() - start_time
     node_id = getNodeID(qworker_id)
-    experiment_id = getExperimentID(qworker_id)
     service_name = getServiceName(qworker_id)
     container_id = getContainerID(qworker_id)
     task_accomplished_timestamp.labels(node_id,experiment_id,service_name,job_id,task_id).set(time.time())
@@ -212,10 +213,9 @@ def terminate_task(qworker_id, job_id, task_id, start_time):
     task_accomplished.labels(node_id,experiment_id,service_name,container_id,job_id,task_id).set(1)
     task_running.labels(node_id,experiment_id,service_name,container_id,job_id,task_id).set(0)
 
-def task_failed(qworker_id, job_id, task_id, fail_time):
+def task_failed(qworker_id, experiment_id, job_id, task_id, fail_time):
     elapsed_time = time.time() - fail_time
     node_id = getNodeID(qworker_id)
-    experiment_id = getExperimentID(qworker_id)
     service_name = getServiceName(qworker_id)
     container_id = getContainerID(qworker_id)
     task_failed_timestamp.labels(node_id,experiment_id,service_name,job_id,task_id).set(time.time())
@@ -236,7 +236,3 @@ def getServiceName(worker_id):
 # Get Container ID
 def getContainerID(worker_id):
     return worker_id.split("##")[2]
-
-# Get Experiment ID
-def getExperimentID(worker_id):
-    return worker_id.split("##")[3]
