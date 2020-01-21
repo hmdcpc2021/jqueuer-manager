@@ -22,13 +22,13 @@ class GossipStepEvent(bootsteps.StartStopStep):
 
     def on_cluster_size_change(self, worker):
         cluster_size = len(list(self.c.gossip.state.alive_workers()))
-        log_message = "Active workers cluster size => {0}\nList of Worker => {".format(cluster_size)
+        log_message = "Active workers cluster size => {0}\nList of Worker => (".format(cluster_size)
         still_exist = False
         for w in list(self.c.gossip.state.alive_workers()):
             log_message = log_message + "," + w.hostname
             if w.hostname==worker.hostname:
                 still_exist = True
-        logger.info(log_message + "}")
+        logger.info(log_message + ")")
         if still_exist == False:
             logger.info("Node lost update => {0} Worker doesn't exist in the list of active workers and therefore terminated.".format(worker.hostname))
             monitoring.terminate_worker(worker.hostname)
