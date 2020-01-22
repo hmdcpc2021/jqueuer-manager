@@ -17,7 +17,7 @@ from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_serv
 from experiment import Experiment
 
 logger = logging.getLogger(__name__)
-lock = Lock()
+#lock = Lock()
 jqueuer_lock = sem = threading.Semaphore()
 def add_experiment(experiment_json):
     """ Add an experiment """
@@ -62,57 +62,57 @@ def del_experiment(delete_form):
     return "Service {} not found in queue".format(service_name)
 
 def record_worker_metrics(metric_info):
-    global lock
+    #global lock
     """ Record metric received from worker """
-    with lock:
-        metric_type = metric_info["metric_type"]
-        list_active_nodes = get_current_active_nodes()
-        logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
-        logger.info("list_active_nodes => {0} \n list_nodes_to_scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
-        data_back = "Metric of type {0} is received and recorded".format(metric_type)
-        if metric_type.lower() == "run_job":
-            monitoring.run_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"])
-        elif metric_type.lower() == "terminate_retried_job":
-            ret_val = monitoring.terminate_running_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"])
-            data_back = ret_val if ret_val != "" else data_back
-        elif metric_type.lower() == "terminate_job":
-            ret_val = monitoring.terminate_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["start_time"])
-            data_back = ret_val if ret_val != "" else data_back
-        elif metric_type.lower() == "job_failed":
-            ret_val = monitoring.job_failed(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["fail_time"])
-            data_back = ret_val if ret_val != "" else data_back
-        elif metric_type.lower() == "run_task":
-            monitoring.run_task(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"])
-        elif metric_type.lower() == "terminate_task":
-            monitoring.terminate_task(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"],metric_info["start_time"])
-        elif metric_type.lower() == "task_failed":
-            monitoring.task_failed(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"],metric_info["fail_time"])
-        else:
-            data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
-        return data_back
+    #with lock:
+    metric_type = metric_info["metric_type"]
+    list_active_nodes = get_current_active_nodes()
+    logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
+    logger.info("list_active_nodes => {0} \n list_nodes_to_scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
+    data_back = "Metric of type {0} is received and recorded".format(metric_type)
+    if metric_type.lower() == "run_job":
+        monitoring.run_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"])
+    elif metric_type.lower() == "terminate_retried_job":
+        ret_val = monitoring.terminate_running_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"])
+        data_back = ret_val if ret_val != "" else data_back
+    elif metric_type.lower() == "terminate_job":
+        ret_val = monitoring.terminate_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["start_time"])
+        data_back = ret_val if ret_val != "" else data_back
+    elif metric_type.lower() == "job_failed":
+        ret_val = monitoring.job_failed(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["fail_time"])
+        data_back = ret_val if ret_val != "" else data_back
+    elif metric_type.lower() == "run_task":
+        monitoring.run_task(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"])
+    elif metric_type.lower() == "terminate_task":
+        monitoring.terminate_task(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"],metric_info["start_time"])
+    elif metric_type.lower() == "task_failed":
+        monitoring.task_failed(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"],metric_info["task_id"],metric_info["fail_time"])
+    else:
+        data_back ="The metric of type {} didn't match with any known metric types".format(metric_type)
+    return data_back
 
 def inform_event(event_info):
-    global lock
+    #global lock
     """ Receive information about external events """
-    with lock:
-        event_type = event_info["event_type"]
-        data_back = ""
-        if (event_type.lower() == "nodes_required"):
-            if "num_nodes" in event_info:
-                list_active_nodes = get_current_active_nodes()
-                nodes_required = event_info["num_nodes"]
-                diff = len(list_active_nodes) - nodes_required
-                if diff> 0 and diff != len(monitoring.list_nodes_to_scale_down):
-                    select_nodes_for_scale_down (diff)
-                    monitoring.check_immediate_node_release()   
-                elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
-                    monitoring.list_nodes_to_scale_down.clear()
-                logger.info("Inform_event: \n num_nodes => {0} \n list_active_nodes => {1} \n list_nodes_to_scale_down => {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
-            else:
-                data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
+    #with lock:
+    event_type = event_info["event_type"]
+    data_back = ""
+    if (event_type.lower() == "nodes_required"):
+        if "num_nodes" in event_info:
+            list_active_nodes = get_current_active_nodes()
+            nodes_required = event_info["num_nodes"]
+            diff = len(list_active_nodes) - nodes_required
+            if diff> 0 and diff != len(monitoring.list_nodes_to_scale_down):
+                select_nodes_for_scale_down (diff)
+                monitoring.check_immediate_node_release()   
+            elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
+                monitoring.list_nodes_to_scale_down.clear()
+            logger.info("Inform_event: \n num_nodes => {0} \n list_active_nodes => {1} \n list_nodes_to_scale_down => {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
         else:
-            data_back = "Event of type {} does not match with any known events.".format(event_type)
-        return data_back
+            data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
+    else:
+        data_back = "Event of type {} does not match with any known events.".format(event_type)
+    return data_back
 
 def get_current_active_nodes():
     list_current_nodes = []
@@ -183,11 +183,10 @@ class HTTP(BaseHTTPRequestHandler):
         global jqueuer_lock
         # Processing POST requests
         cur_thread = threading.current_thread()
-        logger.info("Current thread =>  {0} ".format(cur_thread.name))
+        logger.info("Thread arrived =>  {0} ".format(cur_thread.name))
         jqueuer_lock.acquire()
-        time.sleep(3)
         cur_thread = threading.current_thread()
-        logger.info("Current thread after sleep =>  {0} ".format(cur_thread.name))
+        logger.info("Thread entered into critical region  =>  {0}".format(cur_thread.name))
         content_length = None
         data_json = None
         data = None
@@ -203,6 +202,8 @@ class HTTP(BaseHTTPRequestHandler):
             logger.error("Error in parsing the content_length and packet data")
         data_back = ""
 
+        logger.info("Data_json => {0}".format(data_json))
+        
         if self.path == "/experiment/result":
 
             html_file = open("./" + data_json["id"] + ".html", "a")
@@ -223,6 +224,8 @@ class HTTP(BaseHTTPRequestHandler):
 
         self._set_headers()
         self.wfile.write(bytes(str(data_back), "utf-8"))
+        cur_thread = threading.current_thread()
+        logger.info("Thread leaving critical region =>  {0} ".format(cur_thread.name))
         jqueuer_lock.release()
 
 
