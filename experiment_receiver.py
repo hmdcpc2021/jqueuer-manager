@@ -9,7 +9,7 @@ import logging
 import subprocess
 import monitoring
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from threading import Thread, Lock
 from pprint import pprint
 
