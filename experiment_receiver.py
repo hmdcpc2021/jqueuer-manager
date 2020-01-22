@@ -8,6 +8,7 @@ import logging
 
 import subprocess
 import monitoring
+import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread, Lock
 from pprint import pprint
@@ -66,6 +67,8 @@ def record_worker_metrics(metric_info):
     with lock:
         metric_type = metric_info["metric_type"]
         list_active_nodes = get_current_active_nodes()
+        cur_thread = threading.current_thread()
+        logger.info("Current thread =>  {0} ".format(cur_thread.name))
         logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
         logger.info("list_active_nodes => {0} \n list_nodes_to_scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
@@ -180,7 +183,6 @@ class HTTP(BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
-        logger.info("Inside post. The path is: {}".format(self.path))
         # Processing POST requests
         content_length = None
         data_json = None
@@ -224,7 +226,7 @@ def start(experiments_arg, port=8081):
     global experiments
     experiments = experiments_arg
     server_address = ("", port)
-    httpd = HTTPServer(server_address, HTTP)
+    httpd = ThreadingHTTPServer(server_address, HTTP)
     print("Starting Experiment Manager HTTP Server..." + str(port))
 
     try:
