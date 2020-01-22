@@ -18,7 +18,7 @@ from experiment import Experiment
 
 logger = logging.getLogger(__name__)
 lock = Lock()
-
+jqueuer_lock = sem = threading.Semaphore()
 def add_experiment(experiment_json):
     """ Add an experiment """
     private_id = (
@@ -67,8 +67,6 @@ def record_worker_metrics(metric_info):
     with lock:
         metric_type = metric_info["metric_type"]
         list_active_nodes = get_current_active_nodes()
-        cur_thread = threading.current_thread()
-        logger.info("Current thread =>  {0} ".format(cur_thread.name))
         logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
         logger.info("list_active_nodes => {0} \n list_nodes_to_scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
         data_back = "Metric of type {0} is received and recorded".format(metric_type)
@@ -161,7 +159,6 @@ class HTTP(BaseHTTPRequestHandler):
     """ HTTP class
     Serve HTTP
     """
-
     def _set_headers(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
@@ -183,7 +180,14 @@ class HTTP(BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
+        global jqueuer_lock
         # Processing POST requests
+        cur_thread = threading.current_thread()
+        logger.info("Current thread =>  {0} ".format(cur_thread.name))
+        jqueuer_lock.acquire()
+        time.sleep(3)
+        cur_thread = threading.current_thread()
+        logger.info("Current thread after sleep =>  {0} ".format(cur_thread.name))
         content_length = None
         data_json = None
         data = None
@@ -219,6 +223,7 @@ class HTTP(BaseHTTPRequestHandler):
 
         self._set_headers()
         self.wfile.write(bytes(str(data_back), "utf-8"))
+        jqueuer_lock.release()
 
 
 def start(experiments_arg, port=8081):
