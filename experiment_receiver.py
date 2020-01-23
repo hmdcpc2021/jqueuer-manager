@@ -17,7 +17,6 @@ from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_serv
 from experiment import Experiment
 
 logger = logging.getLogger(__name__)
-#lock = Lock()
 jqueuer_lock = sem = threading.Semaphore()
 def add_experiment(experiment_json):
     """ Add an experiment """
@@ -62,9 +61,7 @@ def del_experiment(delete_form):
     return "Service {} not found in queue".format(service_name)
 
 def record_worker_metrics(metric_info):
-    #global lock
     """ Record metric received from worker """
-    #with lock:
     metric_type = metric_info["metric_type"]
     list_active_nodes = get_current_active_nodes()
     logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
@@ -92,9 +89,7 @@ def record_worker_metrics(metric_info):
     return data_back
 
 def inform_event(event_info):
-    #global lock
     """ Receive information about external events """
-    #with lock:
     event_type = event_info["event_type"]
     data_back = ""
     if (event_type.lower() == "nodes_required"):
@@ -202,8 +197,6 @@ class HTTP(BaseHTTPRequestHandler):
             logger.error("Error in parsing the content_length and packet data")
         data_back = ""
 
-        logger.info("Data_json => {0}".format(data_json))
-        
         if self.path == "/experiment/result":
 
             html_file = open("./" + data_json["id"] + ".html", "a")
