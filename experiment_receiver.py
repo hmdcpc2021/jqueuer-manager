@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from threading import Thread, Lock
 from pprint import pprint
 
-from parameters import backend_experiment_db, JOB_QUEUE_PREFIX, pushgateway_service_name
+from parameters import backend_experiment_db, JOB_QUEUE_PREFIX
 from experiment import Experiment
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def record_worker_metrics(metric_info):
     metric_type = metric_info["metric_type"]
     list_active_nodes = get_current_active_nodes()
     logger.info("Metric type =>  {0} \n Metric info => {1}".format(metric_type, metric_info))
-    logger.info("list_active_nodes => {0} \n list_nodes_to_scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
+    logger.debug("Active nodes => {0} \n Nodes to scale_down => {1}".format(list_active_nodes, monitoring.list_nodes_to_scale_down))
     data_back = "Metric of type {0} is received and recorded".format(metric_type)
     if metric_type.lower() == "run_job":
         monitoring.run_job(metric_info["qworker_id"],metric_info["experiment_id"],metric_info["job_id"])
@@ -102,7 +102,7 @@ def inform_event(event_info):
                 monitoring.check_immediate_node_release()   
             elif diff <= 0: # Ignore, any past decisions, if they aren't yet executed.
                 monitoring.list_nodes_to_scale_down.clear()
-            logger.info("Inform_event: \n num_nodes => {0} \n list_active_nodes => {1} \n list_nodes_to_scale_down => {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
+            logger.info("Inform event: Number of nodes => {0} \n Active nodes => {1} \n Nodes to scale_down => {2}".format(nodes_required,list_active_nodes, monitoring.list_nodes_to_scale_down))
         else:
             data_back = "Event of type {} must contain value for \"num_nodes\" parameter.".format(event_type)
     else:
@@ -178,10 +178,10 @@ class HTTP(BaseHTTPRequestHandler):
         global jqueuer_lock
         # Processing POST requests
         cur_thread = threading.current_thread()
-        logger.info("Thread arrived =>  {0} ".format(cur_thread.name))
+        logger.debug("Thread arrived =>  {0} ".format(cur_thread.name))
         jqueuer_lock.acquire()
         cur_thread = threading.current_thread()
-        logger.info("Thread entered into critical region  =>  {0}".format(cur_thread.name))
+        logger.debug("Thread entered into critical region  =>  {0}".format(cur_thread.name))
         content_length = None
         data_json = None
         data = None
@@ -218,7 +218,7 @@ class HTTP(BaseHTTPRequestHandler):
         self._set_headers()
         self.wfile.write(bytes(str(data_back), "utf-8"))
         cur_thread = threading.current_thread()
-        logger.info("Thread leaving critical region =>  {0} ".format(cur_thread.name))
+        logger.debug("Thread left critical region =>  {0} ".format(cur_thread.name))
         jqueuer_lock.release()
 
 

@@ -16,9 +16,6 @@ broker_password = os.getenv("RABBIT_PASS", "mypass")
 broker_server = os.getenv("RABBIT_SERVER", "jqueuer-rabbit")
 broker_port = os.getenv("RABBIT_PORT", 5672)
 
-# Pushgateway configuration
-pushgateway_service_name = os.getenv("PUSHGATEWAY_SERVICE_NAME", "jqueuer-pushgateway")
-
 def broker():
     broker = broker_protocol + "://" + broker_username
     if broker_password != "":

@@ -13,26 +13,18 @@ class GossipStepEvent(bootsteps.StartStopStep):
         self.c.gossip.on.node_join.add(self.on_node_join)
         self.c.gossip.on.node_leave.add(self.on_node_leave)
         self.c.gossip.on.node_lost.add(self.on_node_lost)
-        
-        # self.tasks = [
-        #     self.app.tasks['proj.tasks.add']
-        #     self.app.tasks['proj.tasks.mul']
-        # ]
-        # self.last_size = None
-
     def on_cluster_size_change(self, worker):
         cluster_size = len(list(self.c.gossip.state.alive_workers()))
-        log_message = "Active workers cluster size => {0}\nList of Worker => (".format(cluster_size)
+        log_message = "Active workers cluster size => {0} \nList of Worker => (".format(cluster_size)
         still_exist = False
         for w in list(self.c.gossip.state.alive_workers()):
             log_message = log_message + "," + w.hostname
             if w.hostname==worker.hostname:
                 still_exist = True
-        logger.info(log_message + ")")
+        logger.debug(log_message + ")")
         if still_exist == False:
-            logger.info("Node lost update => {0} Worker doesn't exist in the list of active workers and therefore terminated.".format(worker.hostname))
-            monitoring.terminate_worker(worker.hostname)
-            
+            logger.info("Node lost update => Worker: {0}, isn't active and therefore terminated. ".format(worker.hostname))
+            monitoring.terminate_worker(worker.hostname)        
     def on_node_join(self, worker):
         logger.info('Node join => {0}'.format(worker.hostname))
         monitoring.add_worker(worker.hostname)

@@ -91,7 +91,6 @@ exp_deleted = Gauge("jqueuer_is_exp_deleted","jqueuer_is_exp_deleted",["experime
 def start_experiment(experiment_id):
     global current_experiment_id
     current_experiment_id = experiment_id
-    idle_nodes.labels("99", experiment_id).set(99)
 
 def delete_experiment():
     global current_experiment_id
