@@ -16,7 +16,6 @@ broker_password = os.getenv("RABBIT_PASS", "mypass")
 broker_server = os.getenv("RABBIT_SERVER", "jqueuer-rabbit")
 broker_port = os.getenv("RABBIT_PORT", 5672)
 
-
 def broker():
     broker = broker_protocol + "://" + broker_username
     if broker_password != "":
