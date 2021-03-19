@@ -1,0 +1,51 @@
+{
+    "container_name": "worker",
+    "single_task_duration": 600,
+    "experiment_deadline": 2100,
+    "params": [],
+    "command": [],
+    "jobs": [
+      {
+         "data":[
+ 
+         ],
+         "tasks":[
+            {
+               "data":[],
+               "id":"task_id_0",
+               "command":[
+                  "sleep 500"
+               ]
+            }
+         ],
+         "params":[
+ 
+         ],
+         "id":"job_id_0",
+         "command":[
+ 
+         ]
+      },
+      {
+         "data":[
+ 
+         ],
+         "tasks":[
+            {
+               "data":[],
+               "id":"task_id_0",
+               "command":[
+                  "sleep 800"
+               ]
+            }
+         ],
+         "params":[
+ 
+         ],
+         "id":"job_id_1",
+         "command":[
+ 
+         ]
+      }
+    ]
+ }
